@@ -12,3 +12,5 @@
 
 # This project requires you to do several important data collection and managment tasks, drawing data from several sources (to be named), use spatial (shapefile) data, and provide a presentation laying out your results. 
 
+# Step 1 (due 1/29) Write the code to dowload all the IOWA election results files at precinct level for 2014-2020 general elections (even years), run it to get all the files in your team folder.
+# Step 2+ wil be discussed in class 
