@@ -1,0 +1,30 @@
+# Virtual environment
+venv/
+env/
+.env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Downloaded data (large files - students generate these)
+# Uncomment the next line if you DON'T want to include the data in the repo
+# iowa_election_results/
+
+# Temporary files
+*.tmp
+*.temp
+_temp_downloads/
