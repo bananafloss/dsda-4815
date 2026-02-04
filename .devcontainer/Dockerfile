@@ -16,4 +16,3 @@ ENV CHROME_BIN=/usr/bin/google-chrome-stable
 # Install Python packages
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-EOF
