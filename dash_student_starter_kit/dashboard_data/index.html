@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iowa 2014 Election Results Dashboard</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        /* SECTION: Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* SECTION: Top Bar */
+        #topBar {
+            background-color: #1a3a52;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #title {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        #officeSelect {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            background-color: white;
+            color: #1a3a52;
+            cursor: pointer;
+            font-weight: 500;
+            min-width: 150px;
+        }
+
+        #officeSelect:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* SECTION: Main Container */
+        #container {
+            display: flex;
+            height: calc(100vh - 60px);
+            width: 100%;
+        }
+
+        /* SECTION: Map Container */
+        #mapContainer {
+            flex: 0 0 70%;
+            position: relative;
+            background-color: #e8e8e8;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* SECTION: Sidebar */
+        #sidebar {
+            flex: 0 0 30%;
+            background-color: white;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #sidebarHeader {
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #backButton {
+            background-color: #1a3a52;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        #backButton:hover {
+            background-color: #0f2536;
+        }
+
+        #sidebarTitle {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a3a52;
+        }
+
+        #sidebarContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* SECTION: District/Precinct Results */
+        .districtGroup {
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .districtGroup:last-child {
+            border-bottom: none;
+        }
+
+        .districtHeader {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a3a52;
+            margin-bottom: 10px;
+        }
+
+        .candidateRow {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .partyDot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .candidateName {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .candidateVotes {
+            font-size: 12px;
+            color: #666;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .partyShareBar {
+            width: 100%;
+            height: 6px;
+            background-color: #eee;
+            border-radius: 3px;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .partyShareSegment {
+            height: 100%;
+        }
+
+        .precinctName {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a3a52;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .precinctInfo {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        /* SECTION: Tooltip */
+        .tooltip {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        /* SECTION: Loading State */
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* SECTION: Leaflet Overrides */
+        .leaflet-control-attribution {
+            background-color: rgba(255, 255, 255, 0.9);
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <!-- SECTION: Top Navigation Bar -->
+    <div id="topBar">
+        <div id="title">Iowa 2014 Election Results</div>
+        <select id="officeSelect">
+            <option value="us_congress">US Congress</option>
+            <option value="governor">Governor</option>
+            <option value="us_senate">US Senate</option>
+            <option value="state_senate">State Senate</option>
+            <option value="state_house">State House</option>
+        </select>
+    </div>
+
+    <!-- SECTION: Main Content Area -->
+    <div id="container">
+        <!-- Map -->
+        <div id="mapContainer">
+            <div id="map"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="sidebarHeader">
+                <button id="backButton">Back to all districts</button>
+                <div id="sidebarTitle">US Congress Results</div>
+            </div>
+            <div id="sidebarContent">
+                <div class="loading">Loading data...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // SECTION: Global State
+        const state = {
+            currentOffice: 'us_congress',
+            currentDistrict: null,
+            currentPrecinct: null,
+            map: null,
+            precinctLayer: null,
+            districtLayer: null,
+            data: {
+                precincts: null,
+                districtsHouse: null,
+                districtsSenate: null,
+                districtsCongress: null,
+                resultsDistrict: null,
+                resultsPrecinct: null,
+                precinctRshare: null,
+                precinctNames: null
+            }
+        };
+
+        // SECTION: Color Scheme
+        const colors = {
+            Republican: '#c0392b',
+            Democratic: '#2980b9',
+            Libertarian: '#f39c12',
+            Other: '#95a5a6'
+        };
+
+        // SECTION: R Share Color Scale (Blue-Purple-Red Gradient)
+        function getRShareColor(share) {
+            if (share < 30) return '#2166ac';      // Deep blue
+            if (share < 40) return '#92c5de';      // Light blue
+            if (share < 50) return '#c2a5cf';      // Light purple (competitive-lean D)
+            if (share < 60) return '#f4a582';      // Light red (competitive-lean R)
+            if (share <= 100) return '#b2182b';    // Deep red
+            return '#c2a5cf';                      // Default purple
+        }
+
+        // SECTION: Interpolated Color for Smoother Gradient
+        // Blue (D) -> Purple (50/50) -> Red (R)
+        // No white in the scale, so competitive precincts are clearly distinct
+        // from gray missing-data precincts.
+        function interpolateColor(share) {
+            let color;
+            if (share <= 25) {
+                // Deep blue (#2166ac) to Medium blue (#4393c3)
+                const t = share / 25;
+                color = lerpColor('#2166ac', '#4393c3', t);
+            } else if (share <= 50) {
+                // Medium blue (#4393c3) to Purple (#8073ac)
+                const t = (share - 25) / 25;
+                color = lerpColor('#4393c3', '#8073ac', t);
+            } else if (share <= 75) {
+                // Purple (#8073ac) to Medium red (#d6604d)
+                const t = (share - 50) / 25;
+                color = lerpColor('#8073ac', '#d6604d', t);
+            } else {
+                // Medium red (#d6604d) to Deep red (#b2182b)
+                const t = (share - 75) / 25;
+                color = lerpColor('#d6604d', '#b2182b', t);
+            }
+            return color;
+        }
+
+        // Helper to interpolate between two hex colors
+        function lerpColor(color1, color2, t) {
+            const r1 = parseInt(color1.substr(1, 2), 16);
+            const g1 = parseInt(color1.substr(3, 2), 16);
+            const b1 = parseInt(color1.substr(5, 2), 16);
+
+            const r2 = parseInt(color2.substr(1, 2), 16);
+            const g2 = parseInt(color2.substr(3, 2), 16);
+            const b2 = parseInt(color2.substr(5, 2), 16);
+
+            const r = Math.round(r1 + (r2 - r1) * t);
+            const g = Math.round(g1 + (g2 - g1) * t);
+            const b = Math.round(b1 + (b2 - b1) * t);
+
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        // SECTION: Data Loading
+        // STUDENT DATA: Add your office's data to the JSON files below in this format:
+        //   precinct_rshare.json should have "us_congress", "us_senate", "state_senate", "state_house" keys
+        //   results_district.json should have the same office keys with district results
+        //   results_precinct.json should have the same office keys with precinct results
+        async function loadData() {
+            try {
+                const [precincts, districtsHouse, districtsSenate, districtsCongress,
+                        resultsDistrict, resultsPrecinct, precinctRshare, precinctNames] = await Promise.all([
+                    fetch('precincts.geojson').then(r => r.json()),
+                    fetch('districts_house.geojson').then(r => r.json()),
+                    fetch('districts_senate.geojson').then(r => r.json()),
+                    fetch('districts_congress.geojson').then(r => r.json()),
+                    fetch('results_district.json').then(r => r.json()),
+                    fetch('results_precinct.json').then(r => r.json()),
+                    fetch('precinct_rshare.json').then(r => r.json()),
+                    fetch('precinct_names.json').then(r => r.json())
+                ]);
+
+                state.data = {
+                    precincts,
+                    districtsHouse,
+                    districtsSenate,
+                    districtsCongress,
+                    resultsDistrict,
+                    resultsPrecinct,
+                    precinctRshare,
+                    precinctNames
+                };
+
+                console.log('All data loaded successfully');
+                initMap();
+                renderResults();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('sidebarContent').innerHTML =
+                    '<div class="loading">Error loading data. Please check the console.</div>';
+            }
+        }
+
+        // SECTION: Map Setup
+        function initMap() {
+            state.map = L.map('map', {preferCanvas: true}).setView([42.0, -93.5], 7);
+
+            // Add tile layer (CartoDB Positron)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CartoDB',
+                maxZoom: 19
+            }).addTo(state.map);
+
+            // Add precinct layer
+            addPrecinctLayer();
+
+            // Add district layer
+            addDistrictLayer();
+        }
+
+        // SECTION: Precinct Layer Management
+        function addPrecinctLayer() {
+            if (state.precinctLayer) {
+                state.map.removeLayer(state.precinctLayer);
+            }
+
+            state.precinctLayer = L.geoJSON(state.data.precincts, {
+                style: getPrecinctStyle,
+                onEachFeature: onEachPrecinct
+            }).addTo(state.map);
+        }
+
+        function getPrecinctStyle(feature) {
+            // Use precinct_id (0-based shp_idx) to look up election data
+            const shpIdx = feature.properties.precinct_id;
+            const officeData = state.data.precinctRshare[state.currentOffice];
+            const hasData = officeData && officeData[shpIdx] && officeData[shpIdx].r_twoparty !== null;
+
+            if (!hasData) {
+                // No election data: unmatched precinct or no race in this district
+                return {
+                    fillColor: '#d9d9d9',
+                    weight: 0.5,
+                    opacity: 0.8,
+                    color: '#999',
+                    fillOpacity: 0.7
+                };
+            }
+
+            const rShare = officeData[shpIdx].r_twoparty;
+            return {
+                fillColor: interpolateColor(rShare),
+                weight: 0.5,
+                opacity: 0.8,
+                color: '#999',
+                fillOpacity: 0.85
+            };
+        }
+
+        function onEachPrecinct(feature, layer) {
+            // Use precinct_id (0-based shp_idx) for all data lookups
+            const shpIdx = feature.properties.precinct_id;
+            const officeData = state.data.precinctRshare[state.currentOffice];
+            const hasData = officeData && officeData[shpIdx] && officeData[shpIdx].r_twoparty !== null;
+            const rShare = hasData ? officeData[shpIdx].r_twoparty : null;
+            const precinctName = state.data.precinctNames[shpIdx];
+            const displayName = precinctName ? precinctName.elec_name : feature.properties.name;
+            const county = precinctName ? precinctName.county : '';
+
+            // Build tooltip content
+            let tooltipContent = '<strong>' + displayName + '</strong>';
+            if (county) tooltipContent += '<br>' + county + ' County';
+            if (rShare !== null) {
+                tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
+            } else {
+                tooltipContent += '<br><em>No data for this race</em>';
+            }
+
+            // Bind tooltip — follows the mouse cursor, no positioning issues
+            layer.bindTooltip(tooltipContent, {sticky: true});
+
+            // Highlight on hover
+            layer.on('mouseover', function() {
+                this.setStyle({weight: 2, color: '#333'});
+            });
+
+            layer.on('mouseout', function() {
+                this.setStyle({weight: 0.5, color: '#999'});
+            });
+
+            // Click to show precinct results in sidebar
+            layer.on('click', function() {
+                state.currentPrecinct = shpIdx;
+                renderResults();
+                state.map.fitBounds(layer.getBounds());
+            });
+        }
+
+        // SECTION: District Layer Management
+        function addDistrictLayer() {
+            if (state.districtLayer) {
+                state.map.removeLayer(state.districtLayer);
+            }
+
+            let districtGeoJSON = getDistrictGeoJSON();
+            if (!districtGeoJSON) return;
+
+            state.districtLayer = L.geoJSON(districtGeoJSON, {
+                interactive: false,   // Let mouse events pass through to precinct layer
+                style: {
+                    fillOpacity: 0,
+                    weight: 3,
+                    color: '#333',
+                    dashArray: '5, 5'
+                }
+            }).addTo(state.map);
+        }
+
+        function getDistrictGeoJSON() {
+            switch (state.currentOffice) {
+                case 'governor':
+                case 'us_senate':
+                    return null; // Statewide, no district boundaries
+                case 'us_congress':
+                    return state.data.districtsCongress;
+                case 'state_senate':
+                    return state.data.districtsSenate;
+                case 'state_house':
+                    return state.data.districtsHouse;
+                default:
+                    return null;
+            }
+        }
+
+        function onEachDistrict(feature, layer) {
+            const district = feature.properties.district;
+
+            layer.on('click', function() {
+                state.currentDistrict = district;
+                state.currentPrecinct = null;
+                renderResults();
+
+                // Zoom to district
+                state.map.fitBounds(layer.getBounds());
+            });
+
+            layer.on('mouseover', function() {
+                this.setStyle({weight: 4});
+            });
+
+            layer.on('mouseout', function() {
+                this.setStyle({weight: 3});
+            });
+        }
+
+        // SECTION: Results Rendering
+        function renderResults() {
+            const sidebarContent = document.getElementById('sidebarContent');
+            const sidebarTitle = document.getElementById('sidebarTitle');
+            const backButton = document.getElementById('backButton');
+
+            if (state.currentPrecinct !== null) {
+                // Show precinct-level results
+                renderPrecinctResults(sidebarContent, sidebarTitle);
+                backButton.style.display = 'block';
+            } else if (state.currentDistrict !== null) {
+                // Show district-level results
+                renderDistrictResults(sidebarContent, sidebarTitle);
+                backButton.style.display = 'block';
+            } else {
+                // Show all districts/statewide results
+                renderAllDistrictsResults(sidebarContent, sidebarTitle);
+                backButton.style.display = 'none';
+            }
+        }
+
+        function renderAllDistrictsResults(container, titleEl) {
+            const officeLabel = getOfficeLabel(state.currentOffice);
+            titleEl.textContent = officeLabel + ' Results';
+
+            if (!state.data.resultsDistrict[state.currentOffice]) {
+                container.innerHTML = '<div class="loading">No data available</div>';
+                return;
+            }
+
+            const results = state.data.resultsDistrict[state.currentOffice];
+            let html = '';
+
+            // Sort district keys
+            const districtKeys = Object.keys(results).sort((a, b) => {
+                if (a === 'statewide') return -1;
+                if (b === 'statewide') return 1;
+                return parseInt(a) - parseInt(b);
+            });
+
+            districtKeys.forEach(district => {
+                const candidates = results[district];
+                const districtTitle = district === 'statewide' ? 'Statewide' : 'District ' + district;
+
+                html += '<div class="districtGroup">';
+                html += '<div class="districtHeader">' + districtTitle + '</div>';
+
+                // Calculate party totals for bar
+                const partyTotals = {};
+                candidates.forEach(c => {
+                    if (!partyTotals[c.party]) partyTotals[c.party] = 0;
+                    partyTotals[c.party] += c.votes;
+                });
+
+                const totalVotes = candidates.reduce((sum, c) => sum + c.votes, 0);
+
+                // Build stacked bar
+                html += '<div class="partyShareBar">';
+                Object.entries(partyTotals).forEach(([party, votes]) => {
+                    const percentage = (votes / totalVotes) * 100;
+                    const color = colors[party] || colors.Other;
+                    html += `<div class="partyShareSegment" style="width: ${percentage}%; background-color: ${color};" title="${party}: ${percentage.toFixed(1)}%"></div>`;
+                });
+                html += '</div>';
+
+                // List candidates
+                candidates.forEach(c => {
+                    const color = colors[c.party] || colors.Other;
+                    html += '<div class="candidateRow">';
+                    html += `<div class="partyDot" style="background-color: ${color};"></div>`;
+                    html += `<div class="candidateName">${c.CandidateName}</div>`;
+                    html += `<div class="candidateVotes">${c.share}%</div>`;
+                    html += '</div>';
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderDistrictResults(container, titleEl) {
+            const officeLabel = getOfficeLabel(state.currentOffice);
+            titleEl.textContent = officeLabel + ' - District ' + state.currentDistrict;
+
+            if (!state.data.resultsDistrict[state.currentOffice]) {
+                container.innerHTML = '<div class="loading">No data available</div>';
+                return;
+            }
+
+            const results = state.data.resultsDistrict[state.currentOffice];
+            const candidates = results[state.currentDistrict];
+
+            if (!candidates) {
+                const noRaceMsg = state.currentOffice === 'state_senate'
+                    ? 'No State Senate race in this district in 2014 (only odd-numbered districts had elections).'
+                    : 'No results for this district.';
+                container.innerHTML = '<div class="loading">' + noRaceMsg + '</div>';
+                return;
+            }
+
+            let html = '';
+
+            // Calculate party totals
+            const partyTotals = {};
+            candidates.forEach(c => {
+                if (!partyTotals[c.party]) partyTotals[c.party] = 0;
+                partyTotals[c.party] += c.votes;
+            });
+
+            const totalVotes = candidates.reduce((sum, c) => sum + c.votes, 0);
+
+            // Build stacked bar
+            html += '<div class="partyShareBar">';
+            Object.entries(partyTotals).forEach(([party, votes]) => {
+                const percentage = (votes / totalVotes) * 100;
+                const color = colors[party] || colors.Other;
+                html += `<div class="partyShareSegment" style="width: ${percentage}%; background-color: ${color};" title="${party}: ${percentage.toFixed(1)}%"></div>`;
+            });
+            html += '</div>';
+
+            // List candidates
+            candidates.forEach(c => {
+                const color = colors[c.party] || colors.Other;
+                html += '<div class="candidateRow">';
+                html += `<div class="partyDot" style="background-color: ${color};"></div>`;
+                html += `<div class="candidateName">${c.CandidateName}</div>`;
+                html += `<div class="candidateVotes">${c.votes.toLocaleString()}</div>`;
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderPrecinctResults(container, titleEl) {
+            const shpIdx = state.currentPrecinct;
+            const precinctName = state.data.precinctNames[shpIdx];
+            const feature = state.data.precincts.features.find(f => f.properties.precinct_id === shpIdx);
+
+            const displayName = precinctName ? precinctName.elec_name : 'Unknown Precinct';
+            const county = precinctName ? precinctName.county : 'Unknown';
+            const shapeName = precinctName ? precinctName.shp_name : '';
+
+            titleEl.textContent = displayName;
+
+            if (!state.data.resultsPrecinct[state.currentOffice]) {
+                container.innerHTML = '<div class="loading">No data available</div>';
+                return;
+            }
+
+            const results = state.data.resultsPrecinct[state.currentOffice];
+            const candidates = results[shpIdx];
+
+            if (!candidates) {
+                let noDataMsg = 'No results for this precinct.';
+                if (state.currentOffice === 'state_senate') {
+                    noDataMsg = 'No State Senate race in this precinct\'s district in 2014.';
+                } else if (!state.data.precinctNames[shpIdx]) {
+                    noDataMsg = 'This precinct could not be matched to election data.';
+                }
+                container.innerHTML = '<div class="loading">' + noDataMsg + '</div>';
+                return;
+            }
+
+            let html = '';
+
+            // Precinct info
+            html += `<div class="precinctName">${displayName}</div>`;
+            html += `<div class="precinctInfo"><strong>County:</strong> ${county}</div>`;
+            if (shapeName) {
+                html += `<div class="precinctInfo"><strong>Shapefile Name:</strong> ${shapeName}</div>`;
+            }
+
+            // Candidate results
+            html += '<div class="districtGroup" style="margin-top: 15px; border-bottom: none;">';
+
+            candidates.forEach(c => {
+                const color = colors[c.party] || colors.Other;
+                html += '<div class="candidateRow">';
+                html += `<div class="partyDot" style="background-color: ${color};"></div>`;
+                html += `<div class="candidateName">${c.CandidateName}</div>`;
+                html += `<div class="candidateVotes">${c.votes}</div>`;
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // SECTION: Office Selection Handler
+        function getOfficeLabel(office) {
+            const labels = {
+                'governor': 'Governor',
+                'us_senate': 'US Senate',
+                'us_congress': 'US Congress',
+                'state_senate': 'State Senate',
+                'state_house': 'State House'
+            };
+            return labels[office] || office;
+        }
+
+        document.getElementById('officeSelect').addEventListener('change', function(e) {
+            state.currentOffice = e.target.value;
+            state.currentDistrict = null;
+            state.currentPrecinct = null;
+
+            // Update sidebar title
+            const officeLabel = getOfficeLabel(state.currentOffice);
+            document.getElementById('sidebarTitle').textContent = officeLabel + ' Results';
+            document.getElementById('backButton').style.display = 'none';
+
+            // Refresh map layers
+            addPrecinctLayer();
+            addDistrictLayer();
+
+            // Render new results
+            renderResults();
+
+            // Reset zoom
+            state.map.setView([42.0, -93.5], 7);
+        });
+
+        // SECTION: Back Button Handler
+        document.getElementById('backButton').addEventListener('click', function() {
+            state.currentDistrict = null;
+            state.currentPrecinct = null;
+            renderResults();
+            state.map.setView([42.0, -93.5], 7);
+        });
+
+        // SECTION: Initialization
+        loadData();
+    </script>
+</body>
+</html>
