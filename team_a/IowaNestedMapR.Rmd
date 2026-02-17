@@ -1,0 +1,129 @@
+---
+title: "Nested Iowa Map"
+output: html_document
+date: "2026-01-29"
+---
+```{r}
+
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+
+
+sf_use_s2(FALSE)
+
+
+precincts <- st_read(
+  "C:/Users/2112c/OneDrive/Documents/CL_Capstone_Mini/Iowa_Precincts14/Precincts.shp",
+  quiet = TRUE
+) |>
+  st_transform(26915)
+
+```
+
+```{r}
+
+house <- precincts |>
+  group_by(House_Dist) |>
+  summarise(geometry = st_union(geometry), .groups = "drop") |>
+  mutate(house_id = suppressWarnings(as.integer(str_extract(as.character(House_Dist), "\\d+")))) |>
+  filter(!is.na(house_id))
+
+senate <- precincts |>
+  group_by(Senate_Dis) |>
+  summarise(geometry = st_union(geometry), .groups = "drop") |>
+  mutate(senate_id = suppressWarnings(as.integer(str_extract(as.character(Senate_Dis), "\\d+")))) |>
+  filter(!is.na(senate_id))
+
+congress <- precincts |>
+  group_by(Congressio) |>
+  summarise(geometry = st_union(geometry), .groups = "drop") |>
+  mutate(cd_id = suppressWarnings(as.integer(str_extract(as.character(Congressio), "\\d+")))) |>
+  filter(!is.na(cd_id))
+```
+
+```{r}
+
+cd_base <- c(
+  `1` = "#6a51a3",  # purple
+  `2` = "#2b8cbe",  # blue
+  `3` = "#fdae6b",  # orange
+  `4` = "#31a354"   # green
+)
+
+
+shade_hex <- function(hex, factor) {
+  if (is.na(factor)) return(NA_character_)
+  factor <- max(0, min(2, factor))
+  rgbm <- col2rgb(hex)
+  rgb(
+    pmin(255, rgbm[1,] * factor) / 255,
+    pmin(255, rgbm[2,] * factor) / 255,
+    pmin(255, rgbm[3,] * factor) / 255
+  )
+}
+
+
+all_layers <- list()
+
+for (i in seq_len(nrow(congress))) {
+
+  cd_poly <- congress[i, ]
+  cd_id   <- as.character(cd_poly$cd_id)
+
+  base <- cd_base[[cd_id]]
+  if (is.null(base)) next
+
+  s_clip <- st_intersection(senate, cd_poly) |>
+    mutate(
+      shade = ((senate_id %% 7) + 6) / 10,
+      fill  = vapply(shade, \(x) shade_hex(base, x), character(1))
+    )
+
+  h_clip <- st_intersection(house, cd_poly) |>
+    mutate(
+      shade = ((house_id %% 9) + 7) / 12,
+      fill  = vapply(shade, \(x) shade_hex(base, x), character(1))
+    )
+
+  all_layers[[length(all_layers) + 1]] <- s_clip
+  all_layers[[length(all_layers) + 1]] <- h_clip
+}
+
+nested <- bind_rows(all_layers) |>
+  filter(!is.na(fill))
+
+```
+```{r}
+nested_plot <- nested |>
+  select(fill, geometry) |>
+  st_make_valid() |>
+  st_collection_extract("POLYGON") |>
+  st_cast("MULTIPOLYGON", warn = FALSE) |>
+  filter(!st_is_empty(geometry))
+
+st_agr(nested_plot) <- "constant"
+
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = nested_plot, aes(fill = fill), color = NA, alpha = 0.9) +
+  geom_sf(data = precincts, fill = NA, color = "black", linewidth = 0.04, alpha = 0.06) +
+  geom_sf(data = st_boundary(senate), color = "black",
+          linewidth = 0.45, linetype = "dashed", alpha = 0.06) +
+  geom_sf(data = st_boundary(congress), color = "black", linewidth = 1.2) +
+  scale_fill_identity() +
+  ggtitle("Iowa Legislative Districts\nNested Congressional, Senate, and House Districts") +
+  theme_void() +
+   theme(
+  plot.title = element_text(size = 10, face = "bold", hjust = 0.5),
+  plot.margin = margin(t = 20, r = 20, b = 20, l = 20),
+  plot.background = element_rect(fill = "white", color = NA),
+  panel.background = element_rect(fill = "white", color = NA)
+)
+
+```
+
+
