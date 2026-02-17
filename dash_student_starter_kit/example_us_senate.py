@@ -130,30 +130,28 @@ print(f"Example (shp_idx '0'): {results_precinct.get('0')}")
 # ---------------------------------------------------------------
 # Step 7: Export to JSON
 # ---------------------------------------------------------------
-# IMPORTANT: Each file wraps the data under the office key name.
-# The dashboard looks up data by office key, so the key must match
-# exactly: "us_senate", "us_congress", "state_senate", "state_house"
+# Each team creates 3 files named with their office suffix.
+# The dashboard fetches: precinct_rshare_OFFICE.json,
+#   results_district_OFFICE.json, results_precinct_OFFICE.json
+#
+# For US Senate, the files are:
+#   precinct_rshare_us_senate.json
+#   results_district_us_senate.json
+#   results_precinct_us_senate.json
 
-# Load the existing files (which already have "governor")
-with open('dashboard_data/precinct_rshare.json') as f:
-    existing_rshare = json.load(f)
-with open('dashboard_data/results_district.json') as f:
-    existing_rd = json.load(f)
-with open('dashboard_data/results_precinct.json') as f:
-    existing_rp = json.load(f)
+office_name = 'us_senate'
 
-# Add our office's data
-existing_rshare['us_senate'] = precinct_rshare
-existing_rd['us_senate'] = results_district
-existing_rp['us_senate'] = results_precinct
+with open(f'dashboard_data/precinct_rshare_{office_name}.json', 'w') as f:
+    json.dump(precinct_rshare, f)
 
-# Write back
-with open('dashboard_data/precinct_rshare.json', 'w') as f:
-    json.dump(existing_rshare, f)
-with open('dashboard_data/results_district.json', 'w') as f:
-    json.dump(existing_rd, f)
-with open('dashboard_data/results_precinct.json', 'w') as f:
-    json.dump(existing_rp, f)
+with open(f'dashboard_data/results_district_{office_name}.json', 'w') as f:
+    json.dump(results_district, f)
 
-print("\nJSON files updated successfully.")
-print("Open dashboard_data/index.html and select 'US Senate' from the dropdown to test.")
+with open(f'dashboard_data/results_precinct_{office_name}.json', 'w') as f:
+    json.dump(results_precinct, f)
+
+print(f"\nJSON files created:")
+print(f"  dashboard_data/precinct_rshare_{office_name}.json")
+print(f"  dashboard_data/results_district_{office_name}.json")
+print(f"  dashboard_data/results_precinct_{office_name}.json")
+print(f"\nOpen the dashboard and select 'US Senate' from the dropdown to test.")
