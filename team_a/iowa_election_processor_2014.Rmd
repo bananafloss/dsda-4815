@@ -1,0 +1,368 @@
+---
+title: "Iowa Election Data Processor"
+author: "Election Data Analysis"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Overview
+
+This R Markdown document processes Iowa election CSV files to:
+
+1. Keep only major races (President, Governor, US Senate, US House, State Senate, State House)
+2. Keep only the "Total" vote columns (remove Absentee and Polling breakdowns)
+3. Clean up column names (remove " Total" suffix)
+
+Designed to be readable for students with ~1.5 semesters of programming experience.
+
+**Required libraries:** `tidyverse` (includes `readr` for CSV files)
+
+```{r load-libraries}
+# Install packages if needed:
+# install.packages("tidyverse")
+
+library(tidyverse)
+```
+
+---
+
+# Step 1: Define Which Races to Keep
+
+```{r race-filter-function}
+#' Check if a race should be kept in our filtered data
+#'
+#' We want to keep major political races and remove judicial retention votes.
+#'
+#' @param race_name The name of the race (e.g., "President and Vice President")
+#' @return TRUE if we should keep this race, FALSE if we should remove it
+is_race_we_want <- function(race_name) {
+  
+  # Handle missing or invalid race names
+  if (is.na(race_name) || !is.character(race_name)) {
+    return(FALSE)
+  }
+  
+  # Convert to lowercase for easier matching
+  race_lower <- tolower(race_name)
+  
+  # List of keywords that identify races we want to KEEP
+  races_to_keep <- c(
+    'president',
+    'governor',
+    'u.s. senator',
+    'us senator',
+    'u.s. rep',
+    'us rep',
+    'state senator',
+    'state rep'
+  )
+  
+  # Check if any of our keywords appear in the race name
+  # str_detect returns TRUE if the pattern is found
+  any(str_detect(race_lower, races_to_keep))
+}
+```
+
+---
+
+# Step 2: Identify Which Columns to Keep
+
+```{r column-filter-function}
+#' Determine which columns to keep from the spreadsheet
+#'
+#' We keep:
+#'   - RaceTitle, CandidateName, PoliticalPartyName (metadata columns)
+#'   - Any column ending in " Total" (renamed to remove that suffix)
+#'
+#' We remove:
+#'   - Absentee columns
+#'   - Polling columns
+#'   - County total columns (no hyphen in name, like just "Polk")
+#'
+#' @param column_names Vector of column headers from the spreadsheet
+#' @return Data frame with columns: original_name, new_name, keep (TRUE/FALSE)
+get_columns_to_keep <- function(column_names) {
+  
+  # Metadata columns we always keep (using their original names)
+  metadata_columns <- c('RaceTitle', 'CandidateName', 'PoliticalPartyName')
+  
+  # Create a data frame to track column decisions
+  column_info <- tibble(
+    original_name = column_names,
+    new_name = NA_character_,
+    keep = FALSE
+  )
+  
+  # Process each column
+  for (i in seq_along(column_names)) {
+    col_name <- column_names[i]
+    
+    # Skip NA columns
+    if (is.na(col_name)) {
+      next
+    }
+    
+    # Clean up whitespace
+    col_name_clean <- str_trim(col_name)
+    
+    # Check if it's a metadata column
+    if (col_name_clean %in% metadata_columns) {
+      column_info$new_name[i] <- col_name_clean
+      column_info$keep[i] <- TRUE
+      
+    # Check if it's a "Total" column (these are the vote totals we want)
+    } else if (str_ends(col_name_clean, " Total")) {
+      # Remove the " Total" suffix to get just the precinct name
+      precinct_name <- str_remove(col_name_clean, " Total$")
+      
+      # Only keep precinct totals (they have a hyphen like "Polk-Precinct1")
+      # Skip county totals (they have no hyphen, like just "Polk")
+      if (str_detect(precinct_name, "-")) {
+        column_info$new_name[i] <- precinct_name
+        column_info$keep[i] <- TRUE
+      }
+    }
+  }
+  
+  # Return only the columns we're keeping
+  column_info %>% 
+    filter(keep) %>%
+    select(original_name, new_name)
+}
+```
+
+---
+
+# Step 3: Main Processing Function
+
+```{r process-election-file}
+#' Process an Iowa election CSV file
+#'
+#' @param input_filename Path to the original CSV file
+#' @param output_filename Path where the cleaned file should be saved
+process_election_file <- function(input_filename, output_filename) {
+  
+  cat("\n")
+  cat("=" %>% rep(60) %>% paste(collapse = ""), "\n")
+  cat("Processing:", input_filename, "\n")
+  cat("=" %>% rep(60) %>% paste(collapse = ""), "\n\n")
+  
+  # --- Load the source file ---
+  cat("Loading file...\n")
+  source_data <- read_csv(input_filename, show_col_types = FALSE)
+  
+  original_rows <- nrow(source_data)
+  original_cols <- ncol(source_data)
+  cat("Original size:", original_rows, "rows x", original_cols, "columns\n")
+  
+  # --- Get the column names ---
+  column_names <- names(source_data)
+  
+  # --- Determine which columns to keep ---
+  columns_to_keep <- get_columns_to_keep(column_names)
+  cat("Columns to keep:", nrow(columns_to_keep), "\n\n")
+  
+  # --- Filter the data ---
+  # First, select only the columns we want
+  filtered_data <- source_data %>%
+    select(all_of(columns_to_keep$original_name))
+  
+  # Rename columns (remove " Total" suffix)
+  names(filtered_data) <- columns_to_keep$new_name
+  
+  # Then, filter to only the races we want
+  # (assuming first column is RaceTitle)
+  race_col <- names(filtered_data)[1]
+  
+  cleaned_data <- filtered_data %>%
+    filter(map_lgl(.data[[race_col]], is_race_we_want))
+  
+  rows_kept <- nrow(cleaned_data)
+  rows_removed <- original_rows - rows_kept
+  
+  # --- Save the new file ---
+  cat("Rows kept:", rows_kept, "\n")
+  cat("Rows removed:", rows_removed, "\n")
+  
+  write_csv(cleaned_data, output_filename)
+  
+  cat("Saved to:", output_filename, "\n")
+  cat("Final size:", rows_kept, "rows x", ncol(cleaned_data), "columns\n\n")
+  
+  # Return the cleaned data (useful for further analysis in R)
+  invisible(cleaned_data)
+}
+```
+
+---
+
+# Step 4: Merge County Files (for 2016 data)
+
+```{r merge-county-files}
+#' Merge multiple county CSV files into one statewide file
+#'
+#' Each county file has the same rows (races/candidates) but different
+#' precinct columns. We combine them horizontally.
+#'
+#' @param county_files_pattern Glob pattern like "*_2016_totals.csv"
+#' @param output_filename Where to save the merged file
+merge_county_files <- function(county_files_pattern, output_filename) {
+  
+  cat("\n")
+  cat("=" %>% rep(60) %>% paste(collapse = ""), "\n")
+  cat("MERGING COUNTY FILES\n")
+  cat("=" %>% rep(60) %>% paste(collapse = ""), "\n\n")
+  
+  # --- Find all county files ---
+  county_files <- list.files(pattern = county_files_pattern, full.names = TRUE)
+  county_files <- sort(county_files)
+  
+  cat("Found", length(county_files), "county files to merge\n")
+  
+  if (length(county_files) == 0) {
+    stop("ERROR: No files found matching pattern!")
+  }
+  
+  # --- Load the first file to get the base structure ---
+  cat("\nLoading first file as template:", basename(county_files[1]), "\n")
+  first_data <- read_csv(county_files[1], show_col_types = FALSE)
+  
+  # Get the "key" columns (RaceTitle, CandidateName) that identify each row
+  # These should be the same in every county file
+  base_keys <- first_data %>%
+    select(RaceTitle, CandidateName)
+  
+  cat("Base structure:", nrow(base_keys), "candidate rows\n")
+  
+  # Metadata columns to exclude from merging
+  metadata_cols <- c('RaceTitle', 'CandidateName', 'PoliticalPartyName')
+  
+  # Start with just the keys
+  merged_data <- base_keys
+  
+  # --- Process each county file ---
+  total_precincts <- 0
+  problems_found <- character()
+  
+  for (file_path in county_files) {
+    county_name <- basename(file_path) %>% 
+      str_remove("_2016_totals.xlsx")
+    
+    cat("  Adding:", county_name, "...", sep = " ")
+    
+    # Load county data
+    county_data <- read_csv(file_path, show_col_types = FALSE)
+    
+    # Get precinct columns (not metadata)
+    precinct_cols <- names(county_data)[!names(county_data) %in% metadata_cols]
+    
+    cat(length(precinct_cols), "precincts\n")
+    total_precincts <- total_precincts + length(precinct_cols)
+    
+    # Verify that the keys match
+    county_keys <- county_data %>%
+      select(RaceTitle, CandidateName)
+    
+    if (!identical(base_keys, county_keys)) {
+      problems_found <- c(problems_found, 
+                         paste("Row mismatch in", county_name))
+    }
+    
+    # Add this county's precinct votes to the merged data
+    precinct_data <- county_data %>%
+      select(all_of(precinct_cols))
+    
+    merged_data <- bind_cols(merged_data, precinct_data)
+  }
+  
+  cat("\nTotal precincts across all counties:", total_precincts, "\n")
+  
+  # --- Verify the merged data ---
+  cat("\nRunning verification checks...\n")
+  
+  expected_cols <- 2 + total_precincts  # RaceTitle + CandidateName + all precincts
+  
+  if (ncol(merged_data) != expected_cols) {
+    problems_found <- c(problems_found,
+                       paste("Expected", expected_cols, "columns, got", ncol(merged_data)))
+  }
+  
+  # Check vote patterns
+  cat("  Checking vote patterns...\n")
+  
+  statewide_races <- c('president', 'governor', 'u.s. senator', 'us senator')
+  
+  for (i in 1:nrow(merged_data)) {
+    race_title <- tolower(merged_data$RaceTitle[i])
+    candidate <- merged_data$CandidateName[i]
+    
+    # Get precinct votes (all columns except RaceTitle and CandidateName)
+    precinct_votes <- merged_data[i, -(1:2)] %>% as.numeric()
+    
+    # Count precincts with non-zero votes
+    precincts_with_votes <- sum(precinct_votes > 0, na.rm = TRUE)
+    
+    # Check if this is a statewide race
+    is_statewide <- any(str_detect(race_title, statewide_races))
+    
+    # For district races, having votes in ALL precincts would be suspicious
+    if (!is_statewide && precincts_with_votes == total_precincts) {
+      problems_found <- c(problems_found,
+                         paste("Suspicious:", race_title, "/", candidate, 
+                               "has votes in ALL precincts"))
+    }
+  }
+  
+  # --- Report problems ---
+  if (length(problems_found) > 0) {
+    cat("\n*** FOUND", length(problems_found), "POTENTIAL PROBLEMS ***\n")
+    for (p in head(problems_found, 10)) {
+      cat("  -", p, "\n")
+    }
+    if (length(problems_found) > 10) {
+      cat("  ... and", length(problems_found) - 10, "more\n")
+    }
+  } else {
+    cat("  No problems found!\n")
+  }
+  
+  # --- Save the merged file ---
+  cat("\nSaving merged file...\n")
+  write_csv(merged_data, output_filename)
+  
+  cat("Saved:", output_filename, "\n")
+  cat("Final size:", nrow(merged_data), "rows x", ncol(merged_data), "columns\n\n")
+  
+  # Return the merged data
+  invisible(merged_data)
+}
+```
+
+---
+
+# Step 5: Run the Processing
+
+```{r process-2014, eval=FALSE}
+# ----- PROCESS 2014 STATEWIDE FILE -----
+# (Already in statewide format, just needs filtering)
+
+cat("\n")
+cat("=" %>% rep(60) %>% paste(collapse = ""), "\n")
+cat("PROCESSING 2014 DATA\n")
+cat("=" %>% rep(60) %>% paste(collapse = ""), "\n")
+
+data_2014 <- process_election_file(
+  input_filename = "precinct_by_county_2014.csv",
+  output_filename = "statewide_2014_cleaned.csv"
+)
+```
+
+
