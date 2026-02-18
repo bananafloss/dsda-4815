@@ -1,0 +1,454 @@
+{
+  "1": [
+    {
+      "CandidateName": "David Johnson",
+      "party": "Republican",
+      "votes": 18774,
+      "share": 99.0
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 189,
+      "share": 1.0
+    }
+  ],
+  "3": [
+    {
+      "CandidateName": "Bill Anderson",
+      "party": "Republican",
+      "votes": 17176,
+      "share": 98.9
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 195,
+      "share": 1.1
+    }
+  ],
+  "5": [
+    {
+      "CandidateName": "Tim Kraayenbrink",
+      "party": "Republican",
+      "votes": 12383,
+      "share": 55.8
+    },
+    {
+      "CandidateName": "Daryl Beall",
+      "party": "Democratic",
+      "votes": 9801,
+      "share": 44.2
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 14,
+      "share": 0.1
+    }
+  ],
+  "7": [
+    {
+      "CandidateName": "Rick Bertrand",
+      "party": "Republican",
+      "votes": 8766,
+      "share": 57.1
+    },
+    {
+      "CandidateName": "Jim France",
+      "party": "Democratic",
+      "votes": 5738,
+      "share": 37.4
+    },
+    {
+      "CandidateName": "Maria Rundquist",
+      "party": "Other",
+      "votes": 832,
+      "share": 5.4
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 16,
+      "share": 0.1
+    }
+  ],
+  "9": [
+    {
+      "CandidateName": "Jason Schultz",
+      "party": "Republican",
+      "votes": 16293,
+      "share": 99.1
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 148,
+      "share": 0.9
+    }
+  ],
+  "11": [
+    {
+      "CandidateName": "Tom Shipley",
+      "party": "Republican",
+      "votes": 17681,
+      "share": 98.8
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 206,
+      "share": 1.2
+    }
+  ],
+  "13": [
+    {
+      "CandidateName": "Julian B. Garrett",
+      "party": "Republican",
+      "votes": 15326,
+      "share": 61.0
+    },
+    {
+      "CandidateName": "Pam Deichmann",
+      "party": "Democratic",
+      "votes": 8900,
+      "share": 35.4
+    },
+    {
+      "CandidateName": "Clair Tom Thompson",
+      "party": "Libertarian",
+      "votes": 893,
+      "share": 3.6
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 14,
+      "share": 0.1
+    }
+  ],
+  "15": [
+    {
+      "CandidateName": "Chaz Allen",
+      "party": "Democratic",
+      "votes": 13307,
+      "share": 52.5
+    },
+    {
+      "CandidateName": "Crystal Bruntz",
+      "party": "Republican",
+      "votes": 12008,
+      "share": 47.4
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 39,
+      "share": 0.2
+    }
+  ],
+  "17": [
+    {
+      "CandidateName": "Tony Bisignano",
+      "party": "Democratic",
+      "votes": 10548,
+      "share": 62.2
+    },
+    {
+      "CandidateName": "Jonathan Lochman",
+      "party": "Republican",
+      "votes": 5374,
+      "share": 31.7
+    },
+    {
+      "CandidateName": "Jim Bollard",
+      "party": "Other",
+      "votes": 978,
+      "share": 5.8
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 48,
+      "share": 0.3
+    }
+  ],
+  "19": [
+    {
+      "CandidateName": "Jack Whitver",
+      "party": "Republican",
+      "votes": 16742,
+      "share": 81.0
+    },
+    {
+      "CandidateName": "Brett H. Nelson",
+      "party": "Other",
+      "votes": 3802,
+      "share": 18.4
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 113,
+      "share": 0.5
+    }
+  ],
+  "21": [
+    {
+      "CandidateName": "Matt McCoy",
+      "party": "Democratic",
+      "votes": 17851,
+      "share": 97.2
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 512,
+      "share": 2.8
+    }
+  ],
+  "23": [
+    {
+      "CandidateName": "Herman C. Quirmbach",
+      "party": "Democratic",
+      "votes": 11713,
+      "share": 59.0
+    },
+    {
+      "CandidateName": "Jeremy Davis",
+      "party": "Republican",
+      "votes": 8094,
+      "share": 40.8
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 38,
+      "share": 0.2
+    }
+  ],
+  "25": [
+    {
+      "CandidateName": "Bill Dix",
+      "party": "Republican",
+      "votes": 18267,
+      "share": 98.7
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 238,
+      "share": 1.3
+    }
+  ],
+  "27": [
+    {
+      "CandidateName": "Amanda Ragan",
+      "party": "Democratic",
+      "votes": 12898,
+      "share": 56.3
+    },
+    {
+      "CandidateName": "Shawn Dietz",
+      "party": "Republican",
+      "votes": 10012,
+      "share": 43.7
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 17,
+      "share": 0.1
+    }
+  ],
+  "29": [
+    {
+      "CandidateName": "Tod R. Bowman",
+      "party": "Democratic",
+      "votes": 13245,
+      "share": 54.6
+    },
+    {
+      "CandidateName": "James R. Budde",
+      "party": "Republican",
+      "votes": 11002,
+      "share": 45.3
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 22,
+      "share": 0.1
+    }
+  ],
+  "31": [
+    {
+      "CandidateName": "Bill Dotzler",
+      "party": "Democratic",
+      "votes": 13387,
+      "share": 98.6
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 186,
+      "share": 1.4
+    }
+  ],
+  "33": [
+    {
+      "CandidateName": "Robert M. Hogg",
+      "party": "Democratic",
+      "votes": 14430,
+      "share": 61.7
+    },
+    {
+      "CandidateName": "Harry Foster",
+      "party": "Republican",
+      "votes": 8932,
+      "share": 38.2
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 38,
+      "share": 0.2
+    }
+  ],
+  "35": [
+    {
+      "CandidateName": "Wally E. Horn",
+      "party": "Democratic",
+      "votes": 15671,
+      "share": 97.9
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 342,
+      "share": 2.1
+    }
+  ],
+  "37": [
+    {
+      "CandidateName": "Robert E. Dvorsky",
+      "party": "Democratic",
+      "votes": 16613,
+      "share": 97.9
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 364,
+      "share": 2.1
+    }
+  ],
+  "39": [
+    {
+      "CandidateName": "Kevin Kinney",
+      "party": "Democratic",
+      "votes": 12371,
+      "share": 52.2
+    },
+    {
+      "CandidateName": "Michael D. Moore",
+      "party": "Republican",
+      "votes": 11306,
+      "share": 47.7
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 29,
+      "share": 0.1
+    }
+  ],
+  "41": [
+    {
+      "CandidateName": "Mark Chelgren",
+      "party": "Republican",
+      "votes": 10356,
+      "share": 50.8
+    },
+    {
+      "CandidateName": "Steve Siegel",
+      "party": "Democratic",
+      "votes": 9982,
+      "share": 49.0
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 53,
+      "share": 0.3
+    }
+  ],
+  "43": [
+    {
+      "CandidateName": "Joe Bolkcom",
+      "party": "Democratic",
+      "votes": 18000,
+      "share": 98.4
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 294,
+      "share": 1.6
+    }
+  ],
+  "45": [
+    {
+      "CandidateName": "Joe M. Seng",
+      "party": "Democratic",
+      "votes": 13013,
+      "share": 98.1
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 246,
+      "share": 1.9
+    }
+  ],
+  "47": [
+    {
+      "CandidateName": "Roby Smith",
+      "party": "Republican",
+      "votes": 14988,
+      "share": 56.4
+    },
+    {
+      "CandidateName": "Maria Bribriesco",
+      "party": "Democratic",
+      "votes": 11580,
+      "share": 43.6
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 19,
+      "share": 0.1
+    }
+  ],
+  "49": [
+    {
+      "CandidateName": "Rita Hart",
+      "party": "Democratic",
+      "votes": 11690,
+      "share": 51.9
+    },
+    {
+      "CandidateName": "Brian Schmidt",
+      "party": "Republican",
+      "votes": 10808,
+      "share": 48.0
+    },
+    {
+      "CandidateName": "Write-in",
+      "party": "Other",
+      "votes": 23,
+      "share": 0.1
+    }
+  ]
+}
