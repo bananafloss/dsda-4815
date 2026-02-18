@@ -1,5 +1,54 @@
 ---
-title: "US Congress"
-format: html
+title: "US Congress Geojsons doc"
+author: "Emma Wishneski"
+toc: true
+number-sections: true
+highlight-style: pygments
+format: 
+  html: 
+    code-fold: true
+    html-math-method: katex
+    embed-resources: true
+    self-contained-math: true	
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
 ---
 
+```{python}
+import pandas as pd
+import json
+```
+
+```{python}
+df = pd.read_csv('C:\Users\emmaw\DSDA4815\dsda-4815\USCongress\data\iowa_2014_precinct_database.csv')
+# sets the data frame to read the cleaned 2014 precinct data
+```
+
+```{python}
+congress = df[df['RaceTitle'].str.startswith('U.S. Rep')].copy()
+```
+
+```{python}
+print(f"US Congress rows: {len(congress)}")
+print(f"Unique precincts: {congress['shp_idx'].nunique()}")
+print(f"Candidates: {congress['CandidateName'].unique()}")
+
+```
+
+```{python}
+party_map = {
+    'Republican Party': 'Republican',
+    'Democratic Party': 'Democratic',
+    'Libertarian Party': 'Libertarian',
+}
+# Rename/ standardize the party names, as the dashboard expects them
+```
+
+```{python}
+congress['party'] = congress['PoliticalPartyName'].map(party_map).fillna('Other')
+
+# Anything not listed will become other
+
+```
