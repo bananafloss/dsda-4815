@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DSDA 4815 — Required Adaptations by Office</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f4f4;
+    color: #222;
+    padding: 28px 32px;
+  }
+  h1 { font-size: 1.2rem; font-weight: 600; margin-bottom: 5px; }
+  .subtitle { font-size: 0.82rem; color: #666; margin-bottom: 18px; line-height: 1.55; }
+
+  .legend {
+    display: flex; gap: 22px; margin-bottom: 18px;
+    padding: 9px 14px; background: #fff;
+    border: 1px solid #ddd; border-radius: 4px; font-size: 0.78rem;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .swatch { width: 28px; height: 13px; border-radius: 2px; }
+  .sw-copy  { background: #e8e8e8; border: 1px solid #ccc; }
+  .sw-new   { background: #ffd0d0; border: 1px solid #d06060; }
+  .sw-check { background: #d0efd0; border: 1px solid #60a060; }
+
+  .tabs { display: flex; gap: 3px; }
+  .tab {
+    padding: 7px 17px; border-radius: 5px 5px 0 0;
+    cursor: pointer; font-size: 0.79rem; font-weight: 600;
+    background: #ddd; color: #666;
+    border: 1px solid #ccc; border-bottom: none;
+  }
+  .tab:hover { background: #e6e6e6; color: #333; }
+  .tab.active { background: #fff; color: #111; border-color: #bbb; }
+
+  .panel {
+    display: none; background: #fff;
+    border: 1px solid #bbb; border-radius: 0 5px 5px 5px;
+  }
+  .panel.active { display: block; }
+
+  .panel-header {
+    padding: 11px 18px; border-bottom: 1px solid #eee;
+    font-size: 0.79rem; color: #777; background: #fafafa;
+    line-height: 1.5;
+  }
+  .panel-header strong { color: #333; font-size: 0.92rem; display: block; margin-bottom: 3px; }
+
+  pre {
+    margin: 0; padding: 16px 20px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 0.76rem; line-height: 1.8;
+    white-space: pre; overflow-x: auto;
+    background: #fff;
+  }
+
+  .copy  { color: #bbb; }
+  .new   { color: #b00000; background: #fff5f5;
+           display: block; border-left: 3px solid #d05050;
+           padding-left: 5px; margin-left: -5px; }
+  .check { color: #1a6b1a; background: #f3fbf3;
+           display: block; border-left: 3px solid #5aaa5a;
+           padding-left: 5px; margin-left: -5px; }
+  .lbl {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em;
+    padding: 1px 5px; border-radius: 2px; margin-left: 8px;
+    vertical-align: middle;
+  }
+  .lbl-new   { background: #ffd0d0; color: #900; }
+  .lbl-check { background: #d0efd0; color: #1a6b1a; }
+</style>
+</head>
+<body>
+
+<h1>DSDA 4815 — Dashboard Assignment: Adaptations from the Example Script</h1>
+<p class="subtitle">
+  All scripts are keyed to <code>example_us_senate.py</code>.
+  <strong style="color:#999">Gray</strong> = copy directly from example &nbsp;|&nbsp;
+  <strong style="color:#b00">Red</strong> = new code required for this office &nbsp;|&nbsp;
+  <strong style="color:#276">Green</strong> = verification check that would have caught the data issue
+</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="swatch sw-copy"></div><span>Copy from example (no change)</span></div>
+  <div class="legend-item"><div class="swatch sw-new"></div><span>New code required</span></div>
+  <div class="legend-item"><div class="swatch sw-check"></div><span>Verification check</span></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active"  onclick="show('senate',this)">Sara — US Senate</div>
+  <div class="tab"         onclick="show('congress',this)">Emma + Claire — US Congress</div>
+  <div class="tab"         onclick="show('stsenate',this)">Jack — State Senate</div>
+  <div class="tab"         onclick="show('house',this)">Sophia — State House</div>
+</div>
+
+
+<!-- US SENATE -->
+<div id="senate" class="panel active">
+<div class="panel-header">
+  <strong>US Senate — Sara Clokey</strong>
+  Statewide race. Simplest adaptation — the pipeline is identical to the example.
+  The only required change is <code>office_name</code> and using a relative file path instead of a hardcoded Windows path.
+</div>
+<pre><span class="copy">import pandas as pd
+import json
+
+# ── Step 1: Load ──────────────────────────────────────────────
+df = pd.read_csv('iowa_2014_precinct_database.csv')
+#                 ↑ relative path — works on any machine
+
+# ── Step 2: Filter ────────────────────────────────────────────
+senate = df[df['RaceTitle'] == 'U.S. Senator'].copy()
+
+# ── Step 3: Standardize party names ───────────────────────────
+party_map = {
+    'Republican Party': 'Republican',
+    'Democratic Party': 'Democratic',
+    'Libertarian Party': 'Libertarian',
+}
+senate['party'] = senate['PoliticalPartyName'].map(party_map).fillna('Other')
+
+# ── Step 4: precinct_rshare ────────────────────────────────────
+precinct_rshare = {}
+for shp_idx, group in senate.groupby('shp_idx'):
+    total   = group['votes'].sum()
+    r_votes = group.loc[group['party'] == 'Republican', 'votes'].sum()
+    d_votes = group.loc[group['party'] == 'Democratic', 'votes'].sum()
+    r_share    = round(float(r_votes / total * 100), 1) if total > 0 else 0.0
+    r_twoparty = round(float(r_votes / (r_votes + d_votes) * 100), 1) if (r_votes + d_votes) > 0 else 0.0
+    precinct_rshare[str(shp_idx)] = {'r_share': r_share, 'r_twoparty': r_twoparty, 'total_votes': int(total)}
+
+# ── Step 5: results_district  (statewide → one key) ───────────
+district_totals = senate.groupby(['CandidateName','party'])['votes'].sum().reset_index()
+district_totals = district_totals.sort_values('votes', ascending=False)
+total_all = district_totals['votes'].sum()
+results_district_list = []
+for _, row in district_totals.iterrows():
+    results_district_list.append({'CandidateName': row['CandidateName'], 'party': row['party'],
+                                  'votes': int(row['votes']), 'share': round(float(row['votes']/total_all*100),1)})
+results_district = {'statewide': results_district_list}
+
+# ── Step 6: results_precinct ──────────────────────────────────
+results_precinct = {}
+for shp_idx, group in senate.groupby('shp_idx'):
+    total = group['votes'].sum()
+    candidates = []
+    for _, row in group.sort_values('votes', ascending=False).iterrows():
+        candidates.append({'CandidateName': row['CandidateName'], 'party': row['party'],
+                           'votes': int(row['votes']), 'share': round(float(row['votes']/total*100),1) if total>0 else 0.0})
+    results_precinct[str(shp_idx)] = candidates
+
+# ── Step 7: Export ────────────────────────────────────────────</span>
+<span class="new">office_name = 'us_senate'   <span class="lbl lbl-new">ONLY REQUIRED CHANGE</span></span>
+<span class="copy">with open(f'dashboard_data/precinct_rshare_{office_name}.json',  'w') as f: json.dump(precinct_rshare,  f)
+with open(f'dashboard_data/results_district_{office_name}.json', 'w') as f: json.dump(results_district, f)
+with open(f'dashboard_data/results_precinct_{office_name}.json', 'w') as f: json.dump(results_precinct,  f)</span>
+</pre>
+</div>
+
+
+<!-- US CONGRESS -->
+<div id="congress" class="panel">
+<div class="panel-header">
+  <strong>US Congress — Emma Wishneski &amp; Claire Lawrence</strong>
+  4 districts. Must extract district number from RaceTitle and loop over districts in Step 5.
+  The <code>congress_district</code> column has NaN for 33 Page County rows — grouping by it silently drops them,
+  causing District 3 totals to be short by ~3,400 votes (Claire's error).
+</div>
+<pre><span class="copy">import pandas as pd
+import json
+
+# ── Step 1: Load ──────────────────────────────────────────────
+df = pd.read_csv('iowa_2014_precinct_database.csv')
+
+# ── Step 2: Filter + extract district number ──────────────────</span>
+<span class="new">congress = df[df['RaceTitle'].str.startswith('U.S. Rep')].copy()                    <span class="lbl lbl-new">NEW FILTER</span></span>
+<span class="new">congress['district'] = congress['RaceTitle'].str.extract(r'Dist\.\s*(\d+)').astype(int)  <span class="lbl lbl-new">EXTRACT DISTRICT</span></span>
+<span class="copy">
+# ── Step 3: Standardize party names ───────────────────────────
+party_map = {'Republican Party':'Republican','Democratic Party':'Democratic','Libertarian Party':'Libertarian'}
+congress['party'] = congress['PoliticalPartyName'].map(party_map).fillna('Other')
+
+# ── Step 4: precinct_rshare ────────────────────────────────────
+precinct_rshare = {}
+for shp_idx, group in congress.groupby('shp_idx'):
+    total   = group['votes'].sum()
+    r_votes = group.loc[group['party'] == 'Republican', 'votes'].sum()
+    d_votes = group.loc[group['party'] == 'Democratic', 'votes'].sum()
+    r_share    = round(float(r_votes / total * 100), 1) if total > 0 else 0.0
+    r_twoparty = round(float(r_votes / (r_votes + d_votes) * 100), 1) if (r_votes + d_votes) > 0 else 0.0
+    precinct_rshare[str(shp_idx)] = {'r_share': r_share, 'r_twoparty': r_twoparty, 'total_votes': int(total)}
+
+# ── Step 5: results_district  (loop over 4 districts) ─────────</span>
+<span class="new">results_district = {}                                                                 <span class="lbl lbl-new">NEW STRUCTURE</span>
+for dist, group in congress.groupby('district'):                                      <span class="lbl lbl-new">LOOP OVER DISTRICTS</span>
+    dist_totals = group.groupby(['CandidateName','party'])['votes'].sum().reset_index()
+    dist_totals = dist_totals.sort_values('votes', ascending=False)
+    total_dist  = dist_totals['votes'].sum()
+    results_district[str(dist)] = []                                                  <span class="lbl lbl-new">ONE KEY PER DISTRICT</span>
+    for _, row in dist_totals.iterrows():
+        results_district[str(dist)].append({
+            'CandidateName': row['CandidateName'], 'party': row['party'],
+            'votes': int(row['votes']), 'share': round(float(row['votes']/total_dist*100),1)})</span>
+<span class="check">
+# ── Verification: check district totals against known results ──
+known = {1:147762, 2:143431, 3:148814, 4:169834}
+for d in ['1','2','3','4']:                                                           <span class="lbl lbl-check">CHECK</span>
+    got = results_district[d][0]['votes']
+    print(f"D{d}: {got:,}  {'✓' if got == known[int(d)] else '✗  WRONG — did you group by congress_district column?'}")</span>
+<span class="copy">
+# ── Step 6: results_precinct ──────────────────────────────────
+results_precinct = {}
+for shp_idx, group in congress.groupby('shp_idx'):
+    total = group['votes'].sum()
+    candidates = []
+    for _, row in group.sort_values('votes', ascending=False).iterrows():
+        candidates.append({'CandidateName': row['CandidateName'], 'party': row['party'],
+                           'votes': int(row['votes']), 'share': round(float(row['votes']/total*100),1) if total>0 else 0.0})
+    results_precinct[str(shp_idx)] = candidates
+
+# ── Step 7: Export ────────────────────────────────────────────</span>
+<span class="new">office_name = 'us_congress'   <span class="lbl lbl-new">CHANGE</span></span>
+<span class="copy">with open(f'dashboard_data/precinct_rshare_{office_name}.json',  'w') as f: json.dump(precinct_rshare,  f)
+with open(f'dashboard_data/results_district_{office_name}.json', 'w') as f: json.dump(results_district, f)
+with open(f'dashboard_data/results_precinct_{office_name}.json', 'w') as f: json.dump(results_precinct,  f)</span>
+</pre>
+</div>
+
+
+<!-- STATE SENATE -->
+<div id="stsenate" class="panel">
+<div class="panel-header">
+  <strong>State Senate — Jack Perkins</strong>
+  25 districts, odd-numbered only (1, 3, 5 … 49). Only 813 of 1,682 precincts have data.
+  The <code>senate_district</code> column has spurious even-numbered values that produce 28 districts if used.
+  Jack correctly identified and documented this — use RaceTitle only.
+</div>
+<pre><span class="copy">import pandas as pd
+import json
+
+# ── Step 1: Load ──────────────────────────────────────────────
+df = pd.read_csv('iowa_2014_precinct_database.csv')
+
+# ── Step 2: Filter + extract district number ──────────────────</span>
+<span class="new">senate = df[df['RaceTitle'].str.startswith('State Senator')].copy()                  <span class="lbl lbl-new">NEW FILTER</span></span>
+<span class="new">senate['district'] = senate['RaceTitle'].str.extract(r'Dist\.\s*(\d+)').astype(int)  <span class="lbl lbl-new">EXTRACT DISTRICT</span></span>
+<span class="check">
+# ── Verification: catch the bad senate_district column ────────
+print(f"Districts from RaceTitle:  {sorted(senate['district'].unique())}")            <span class="lbl lbl-check">CHECK</span>
+print(f"Districts from column:     {sorted(senate['senate_district'].dropna().astype(int).unique())}")  <span class="lbl lbl-check">CHECK</span>
+# ↑ Column returns 28 values including even numbers.
+# RaceTitle returns 25 odd numbers. Always trust RaceTitle.
+print(f"Unique precincts: {senate['shp_idx'].nunique()}")  # should be 813            <span class="lbl lbl-check">CHECK</span></span>
+<span class="copy">
+# ── Step 3: Standardize party names ───────────────────────────
+party_map = {'Republican Party':'Republican','Democratic Party':'Democratic','Libertarian Party':'Libertarian'}
+senate['party'] = senate['PoliticalPartyName'].map(party_map).fillna('Other')
+
+# ── Step 4: precinct_rshare  (813 precincts only) ─────────────
+precinct_rshare = {}
+for shp_idx, group in senate.groupby('shp_idx'):
+    total   = group['votes'].sum()
+    r_votes = group.loc[group['party'] == 'Republican', 'votes'].sum()
+    d_votes = group.loc[group['party'] == 'Democratic', 'votes'].sum()
+    r_share    = round(float(r_votes / total * 100), 1) if total > 0 else 0.0
+    r_twoparty = round(float(r_votes / (r_votes + d_votes) * 100), 1) if (r_votes + d_votes) > 0 else 0.0
+    precinct_rshare[str(shp_idx)] = {'r_share': r_share, 'r_twoparty': r_twoparty, 'total_votes': int(total)}
+
+# ── Step 5: results_district  (loop over 25 odd districts) ────</span>
+<span class="new">results_district = {}                                                                 <span class="lbl lbl-new">NEW STRUCTURE</span>
+for dist, group in senate.groupby('district'):                                        <span class="lbl lbl-new">LOOP OVER DISTRICTS</span>
+    dist_totals = group.groupby(['CandidateName','party'])['votes'].sum().reset_index()
+    dist_totals = dist_totals.sort_values('votes', ascending=False)
+    total_dist  = dist_totals['votes'].sum()
+    results_district[str(dist)] = []                                                  <span class="lbl lbl-new">ODD-NUMBERED STRING KEYS</span>
+    for _, row in dist_totals.iterrows():
+        results_district[str(dist)].append({
+            'CandidateName': row['CandidateName'], 'party': row['party'],
+            'votes': int(row['votes']), 'share': round(float(row['votes']/total_dist*100),1)})</span>
+<span class="check">
+# ── Verification ───────────────────────────────────────────────
+print(f"Districts in output: {len(results_district)}")         # must be 25           <span class="lbl lbl-check">CHECK</span>
+print(sorted(results_district.keys(), key=int))                # must all be odd       <span class="lbl lbl-check">CHECK</span></span>
+<span class="copy">
+# ── Step 6: results_precinct ──────────────────────────────────
+results_precinct = {}
+for shp_idx, group in senate.groupby('shp_idx'):
+    total = group['votes'].sum()
+    candidates = []
+    for _, row in group.sort_values('votes', ascending=False).iterrows():
+        candidates.append({'CandidateName': row['CandidateName'], 'party': row['party'],
+                           'votes': int(row['votes']), 'share': round(float(row['votes']/total*100),1) if total>0 else 0.0})
+    results_precinct[str(shp_idx)] = candidates
+
+# ── Step 7: Export ────────────────────────────────────────────</span>
+<span class="new">office_name = 'state_senate'   <span class="lbl lbl-new">CHANGE</span></span>
+<span class="copy">with open(f'dashboard_data/precinct_rshare_{office_name}.json',  'w') as f: json.dump(precinct_rshare,  f)
+with open(f'dashboard_data/results_district_{office_name}.json', 'w') as f: json.dump(results_district, f)
+with open(f'dashboard_data/results_precinct_{office_name}.json', 'w') as f: json.dump(results_precinct,  f)</span>
+</pre>
+</div>
+
+
+<!-- STATE HOUSE -->
+<div id="house" class="panel">
+<div class="panel-header">
+  <strong>State House — Sophia Fazzina</strong>
+  100 districts, all 1,682 precincts. The <code>house_district</code> column disagrees with
+  RaceTitle for 88 rows (mainly Dubuque County), causing candidates to be credited to the wrong district
+  in 28 of 100 districts. Extract district from RaceTitle — never group by the column.
+</div>
+<pre><span class="copy">import pandas as pd
+import json
+
+# ── Step 1: Load ──────────────────────────────────────────────
+df = pd.read_csv('iowa_2014_precinct_database.csv')
+
+# ── Step 2: Filter + extract district number ──────────────────</span>
+<span class="new">house = df[df['RaceTitle'].str.startswith('State Rep')].copy()                       <span class="lbl lbl-new">NEW FILTER</span></span>
+<span class="new">house['district'] = house['RaceTitle'].str.extract(r'Dist\.\s*(\d+)').astype(int)    <span class="lbl lbl-new">EXTRACT DISTRICT</span></span>
+<span class="check">
+# ── Verification: catch the bad house_district column ─────────
+mismatch = house[house['district'] != house['house_district'].astype(int)]            <span class="lbl lbl-check">CHECK</span>
+print(f"Rows where house_district column != RaceTitle: {len(mismatch)}")              <span class="lbl lbl-check">CHECK</span>
+# ↑ Prints 88.  Those rows land in the wrong district
+# if you do groupby('house_district').  Always use 'district'.</span>
+<span class="copy">
+# ── Step 3: Standardize party names ───────────────────────────
+party_map = {'Republican Party':'Republican','Democratic Party':'Democratic','Libertarian Party':'Libertarian'}
+house['party'] = house['PoliticalPartyName'].map(party_map).fillna('Other')
+
+# ── Step 4: precinct_rshare  (all 1,682 precincts) ────────────
+precinct_rshare = {}
+for shp_idx, group in house.groupby('shp_idx'):
+    total   = group['votes'].sum()
+    r_votes = group.loc[group['party'] == 'Republican', 'votes'].sum()
+    d_votes = group.loc[group['party'] == 'Democratic', 'votes'].sum()
+    r_share    = round(float(r_votes / total * 100), 1) if total > 0 else 0.0
+    r_twoparty = round(float(r_votes / (r_votes + d_votes) * 100), 1) if (r_votes + d_votes) > 0 else 0.0
+    precinct_rshare[str(shp_idx)] = {'r_share': r_share, 'r_twoparty': r_twoparty, 'total_votes': int(total)}
+
+# ── Step 5: results_district  (loop over 100 districts) ───────</span>
+<span class="new">results_district = {}                                                                 <span class="lbl lbl-new">NEW STRUCTURE</span>
+for dist, group in house.groupby('district'):                                         <span class="lbl lbl-new">LOOP OVER 100 DISTRICTS</span>
+    dist_totals = group.groupby(['CandidateName','party'])['votes'].sum().reset_index()
+    dist_totals = dist_totals.sort_values('votes', ascending=False)
+    total_dist  = dist_totals['votes'].sum()
+    results_district[str(dist)] = []                                                  <span class="lbl lbl-new">KEYS "1" THROUGH "100"</span>
+    for _, row in dist_totals.iterrows():
+        results_district[str(dist)].append({
+            'CandidateName': row['CandidateName'], 'party': row['party'],
+            'votes': int(row['votes']), 'share': round(float(row['votes']/total_dist*100),1)})</span>
+<span class="check">
+# ── Verification ───────────────────────────────────────────────
+print(f"Districts in output: {len(results_district)}")         # must be 100          <span class="lbl lbl-check">CHECK</span>
+keys = sorted(results_district.keys(), key=int)
+print(f"First 5: {keys[:5]}   Last 5: {keys[-5:]}")            # should be 1-5, 96-100  <span class="lbl lbl-check">CHECK</span></span>
+<span class="copy">
+# ── Step 6: results_precinct ──────────────────────────────────
+results_precinct = {}
+for shp_idx, group in house.groupby('shp_idx'):
+    total = group['votes'].sum()
+    candidates = []
+    for _, row in group.sort_values('votes', ascending=False).iterrows():
+        candidates.append({'CandidateName': row['CandidateName'], 'party': row['party'],
+                           'votes': int(row['votes']), 'share': round(float(row['votes']/total*100),1) if total>0 else 0.0})
+    results_precinct[str(shp_idx)] = candidates
+
+# ── Step 7: Export ────────────────────────────────────────────</span>
+<span class="new">office_name = 'state_house'   <span class="lbl lbl-new">CHANGE</span></span>
+<span class="copy">with open(f'dashboard_data/precinct_rshare_{office_name}.json',  'w') as f: json.dump(precinct_rshare,  f)
+with open(f'dashboard_data/results_district_{office_name}.json', 'w') as f: json.dump(results_district, f)
+with open(f'dashboard_data/results_precinct_{office_name}.json', 'w') as f: json.dump(results_precinct,  f)</span>
+</pre>
+</div>
+
+<script>
+function show(id, tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+}
+</script>
+</body>
+</html>
