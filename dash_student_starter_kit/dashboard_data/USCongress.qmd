@@ -22,7 +22,7 @@ import json
 ```
 
 ```{python}
-df = pd.read_csv('C:\Users\emmaw\DSDA4815\dsda-4815\USCongress\data\iowa_2014_precinct_database.csv')
+df = pd.read_csv('../iowa_2014_precinct_database.csv')
 # sets the data frame to read the cleaned 2014 precinct data
 ```
 
@@ -43,7 +43,7 @@ party_map = {
     'Democratic Party': 'Democratic',
     'Libertarian Party': 'Libertarian',
 }
-# Rename/ standardize the party names, as the dashboard expects them
+# Rename / standardize the party names, as the dashboard expects them
 ```
 
 ```{python}
@@ -52,3 +52,118 @@ congress['party'] = congress['PoliticalPartyName'].map(party_map).fillna('Other'
 # Anything not listed will become other
 
 ```
+
+
+```{python}
+print(f"\nParty mapping:")
+for orig, mapped in zip(congress['PoliticalPartyName'], congress['party']):
+    pass 
+print(congress.groupby(['PoliticalPartyName', 'party']).size().to_string())
+
+# Applies the map
+```
+
+```{python}
+# build precinct_rshare — R share per precinct
+#   r_share:     Republican votes / total votes * 100
+#   r_twoparty:  Republican votes / (Republican + Democratic) * 100
+#   total_votes: sum of all votes
+
+precinct_rshare = {}
+
+for shp_idx, group in congress.groupby('shp_idx'):
+    total = group['votes'].sum()
+    r_votes = group.loc[group['party'] == 'Republican', 'votes'].sum()
+    d_votes = group.loc[group['party'] == 'Democratic', 'votes'].sum()
+
+    r_share = round(float(r_votes / total * 100), 1) if total > 0 else 0.0
+    r_twoparty = round(float(r_votes / (r_votes + d_votes) * 100), 1) if (r_votes + d_votes) > 0 else 0.0
+
+    precinct_rshare[str(shp_idx)] = {
+        'r_share': r_share,
+        'r_twoparty': r_twoparty,
+        'total_votes': int(total)
+    }
+
+print(f"\nprecinct_rshare: {len(precinct_rshare)} precincts")
+print(f"Example (shp_idx '0'): {precinct_rshare.get('0')}")
+
+```
+
+```{python}
+# Build results_district — candidate totals per district
+# Keys will be district numbers as strings ("1"-"4")
+
+results_district = {}
+
+for district, group in congress.groupby('congress_district'):
+    district_totals = group.groupby(['CandidateName', 'party'])['votes'].sum().reset_index()
+    district_totals = district_totals.sort_values('votes', ascending=False)
+    total_all = district_totals['votes'].sum()
+
+
+    results_district_list = []
+    for _, row in district_totals.iterrows():
+        results_district_list.append({
+            'CandidateName': row['CandidateName'],
+            'party': row['party'],
+            'votes': int(row['votes']),
+            'share': round(float(row['votes'] / total_all * 100), 1)
+        })
+    results_district[str(district)] = results_district_list
+
+print(f"\nresults_district:")
+for district, candidates in results_district.items():
+    print(f"  District {district}:")
+    for c in candidates:
+        print(f"    {c['CandidateName']} ({c['party']}): {c['votes']:,} votes ({c['share']}%)")
+
+```
+
+
+```{python}
+# Build results_precinct — candidate totals per precinct
+# Same structure as results_district, but keyed by shp_idx
+
+results_precinct = {}
+
+for shp_idx, group in congress.groupby('shp_idx'):
+    total = group['votes'].sum()
+    candidates = []
+    for _, row in group.sort_values('votes', ascending=False).iterrows():
+        candidates.append({
+            'CandidateName': row['CandidateName'],
+            'party': row['party'],
+            'votes': int(row['votes']),
+            'share': round(float(row['votes'] / total * 100), 1) if total > 0 else 0.0
+        })
+    results_precinct[str(shp_idx)] = candidates
+
+print(f"\nresults_precinct: {len(results_precinct)} precincts")
+print(f"Example (shp_idx '0'): {results_precinct.get('0')}")
+```
+
+
+```{python}
+
+# Export to JSON
+
+office_name = 'us_congress'
+
+with open(f'precinct_rshare_{office_name}.json', 'w') as f:
+    json.dump(precinct_rshare, f)
+
+with open(f'results_district_{office_name}.json', 'w') as f:
+    json.dump(results_district, f)
+
+with open(f'results_precinct_{office_name}.json', 'w') as f:
+    json.dump(results_precinct, f)
+
+print(f"\nJSON files created:")
+print(f"  precinct_rshare_{office_name}.json")
+print(f"  results_district_{office_name}.json")
+print(f"  results_precinct_{office_name}.json")
+print(f"\nOpen the dashboard and select 'US Congress' from the dropdown to test.")
+```
+
+
