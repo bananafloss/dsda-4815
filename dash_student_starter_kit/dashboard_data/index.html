@@ -859,6 +859,12 @@
             addPrecinctLayer();
             addDistrictLayer();
 
+            // Re-add power plants on top so they aren't buried
+            if (state.powerPlantLayer && document.getElementById('powerPlantToggle').checked) {
+                state.map.removeLayer(state.powerPlantLayer);
+                state.powerPlantLayer.addTo(state.map);
+            }
+
             // Render new results
             renderResults();
 
