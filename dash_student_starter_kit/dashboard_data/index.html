@@ -235,6 +235,9 @@
             <option value="state_senate">State Senate</option>
             <option value="state_house">State House</option>
         </select>
+        <label style="color:white; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="powerPlantToggle" checked> Power Plants
+        </label>
     </div>
 
     <!-- SECTION: Main Content Area -->
@@ -268,6 +271,7 @@
             map: null,
             precinctLayer: null,
             districtLayer: null,
+            powerPlantLayer: null,
             data: {
                 // Shared geographic files (loaded once)
                 precincts: null,
@@ -367,12 +371,13 @@
         // Load shared geographic files (called once at startup)
         async function loadSharedData() {
             try {
-                const [precincts, districtsHouse, districtsSenate, districtsCongress, precinctNames] = await Promise.all([
+                const [precincts, districtsHouse, districtsSenate, districtsCongress, precinctNames, powerPlantsRaw] = await Promise.all([
                     fetch('precincts.geojson').then(r => r.json()),
                     fetch('districts_house.geojson').then(r => r.json()),
                     fetch('districts_senate.geojson').then(r => r.json()),
                     fetch('districts_congress.geojson').then(r => r.json()),
-                    fetch('precinct_names.json').then(r => r.json())
+                    fetch('precinct_names.json').then(r => r.json()),
+                    fetch('renewables16.json').then(r => r.json())
                 ]);
 
                 state.data.precincts = precincts;
@@ -380,6 +385,7 @@
                 state.data.districtsSenate = districtsSenate;
                 state.data.districtsCongress = districtsCongress;
                 state.data.precinctNames = precinctNames;
+                state.data.powerPlants = powerPlantsRaw.response.data;
 
                 console.log('Shared geographic data loaded');
 
@@ -446,6 +452,9 @@
 
             // Add district layer
             addDistrictLayer();
+
+            // Add power plant markers
+            addPowerPlantLayer();
         }
 
         // SECTION: Precinct Layer Management
@@ -581,6 +590,44 @@
             layer.on('mouseout', function() {
                 this.setStyle({weight: 3});
             });
+        }
+
+        // SECTION: Power Plant Layer
+        function addPowerPlantLayer() {
+            if (state.powerPlantLayer) {
+                state.map.removeLayer(state.powerPlantLayer);
+            }
+
+            state.powerPlantLayer = L.layerGroup();
+
+            state.data.powerPlants.forEach(function(plant) {
+                var color = plant.technology === 'Solar Photovoltaic' ? '#f59e0b' : '#22c55e';
+                var icon = plant.technology === 'Solar Photovoltaic' ? '☀' : '⚡';
+                var mw = parseFloat(plant['nameplate-capacity-mw']);
+                var radius = Math.max(3, Math.sqrt(mw) * 0.8);
+
+                var marker = L.circleMarker([parseFloat(plant.latitude), parseFloat(plant.longitude)], {
+                    radius: radius,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillOpacity: 0.85
+                });
+
+                marker.bindTooltip(
+                    '<strong>' + icon + ' ' + plant.plantName + '</strong>' +
+                    '<br>' + plant.technology +
+                    '<br>Capacity: ' + mw + ' MW' +
+                    '<br>County: ' + plant.county +
+                    '<br>Operating since: ' + plant['operating-year-month'],
+                    {sticky: true}
+                );
+
+                marker.addTo(state.powerPlantLayer);
+            });
+
+            state.powerPlantLayer.addTo(state.map);
         }
 
         // SECTION: Results Rendering
@@ -825,6 +872,15 @@
             state.currentPrecinct = null;
             renderResults();
             state.map.setView([42.0, -93.5], 7);
+        });
+
+        // SECTION: Power Plant Toggle
+        document.getElementById('powerPlantToggle').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                state.powerPlantLayer.addTo(state.map);
+            } else {
+                state.map.removeLayer(state.powerPlantLayer);
+            }
         });
 
         // SECTION: Initialization
