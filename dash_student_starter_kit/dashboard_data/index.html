@@ -1,3 +1,14 @@
+/* 
+CODE CHANGES FOR DISTRICT TOOLTIP
+---------------------------------
+Lines modified: 520–537
+
+Added district numbers to the precinct rollover tooltip:
+- US House District
+- State Senate District
+- State House District
+*/
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -506,9 +517,19 @@
             const displayName = precinctName ? precinctName.elec_name : feature.properties.name;
             const county = precinctName ? precinctName.county : '';
 
+            // Get district numbers from precinct properties
+            const congressDistrict = feature.properties.congress_dist;
+            const senateDistrict = feature.properties.senate_dist;
+            const houseDistrict = feature.properties.house_dist;
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
-            if (county) tooltipContent += '<br>' + county + ' County';
+            if (county) {tooltipContent += '<br>' + county + ' County';
+            }
+
+            tooltipContent += '<br>US House District: ' + congressDistrict;
+            tooltipContent += '<br>State Senate District: ' + senateDistrict;
+            tooltipContent += '<br>State House District: ' + houseDistrict;
+
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
