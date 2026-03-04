@@ -1,3 +1,11 @@
+/* 
+CODE CHANGES FOR DISTRICT TOOLTIP
+---------------------------------
+Lines modified: 517–534
+Added US House (congress_dist), State Senate (senate_dist), State House (house_dist) to precinct rollover tooltip.
+*/
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -506,17 +514,24 @@
             const displayName = precinctName ? precinctName.elec_name : feature.properties.name;
             const county = precinctName ? precinctName.county : '';
 
+           // Get district numbers from precinct properties (with fallbacks)
+            const congressDistrict = feature.properties.congress_dist ?? "N/A";
+            const senateDistrict   = feature.properties.senate_dist   ?? "N/A";
+            const houseDistrict    = feature.properties.house_dist    ?? "N/A";
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
             if (county) tooltipContent += '<br>' + county + ' County';
+            tooltipContent += '<br>US House District: ' + congressDistrict;
+            tooltipContent += '<br>State Senate District: ' + senateDistrict;
+            tooltipContent += '<br>State House District: ' + houseDistrict;
+            
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
                 tooltipContent += '<br><em>No data for this race</em>';
             }
-
-            // Bind tooltip — follows the mouse cursor, no positioning issues
-            layer.bindTooltip(tooltipContent, {sticky: true});
+            // Bind tooltip – follows the mouse cursor, no positioning issues
+            layer.bindTooltip(tooltipContent, { sticky: true });
 
             // Highlight on hover
             layer.on('mouseover', function() {
