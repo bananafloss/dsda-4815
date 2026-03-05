@@ -1,3 +1,8 @@
+<!-- 
+CODE CHANGES FOR DISTRICT TOOLTIP
+Lines modified: 514-516, 521-523
+Added congress_dist, senate_dist, house_dist from feature.properties to precinct tooltip
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -506,9 +511,16 @@
             const displayName = precinctName ? precinctName.elec_name : feature.properties.name;
             const county = precinctName ? precinctName.county : '';
 
+            const congressDistrict = feature.properties.congress_dist ?? "N/A";
+            const senateDistrict   = feature.properties.senate_dist   ?? "N/A";
+            const houseDistrict    = feature.properties.house_dist    ?? "N/A";
+            
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
             if (county) tooltipContent += '<br>' + county + ' County';
+            tooltipContent += '<br>US House District: ' + congressDistrict;
+            tooltipContent += '<br>State Senate District: ' + senateDistrict;
+            tooltipContent += '<br>State House District: ' + houseDistrict;
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
