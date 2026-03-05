@@ -1,3 +1,6 @@
+    <!-- EDIT NOTE: Added district numbers to the precinct rollover tooltip.
+     Changes in onEachPrecinct() around lines 499–520. -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -509,6 +512,14 @@
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
             if (county) tooltipContent += '<br>' + county + ' County';
+            // District numbers (update these property names to match your precinct geojson)
+            const usHouse = feature.properties.congress_dist;  // 1–4
+            const stSen  = feature.properties.senate_dist;     // 1–50
+            const stHouse = feature.properties.house_dist;     // 1–100
+
+            if (usHouse != null) tooltipContent += '<br>US House District: ' + usHouse;
+            if (stSen != null) tooltipContent += '<br>State Senate District: ' + stSen;
+            if (stHouse != null) tooltipContent += '<br>State House District: ' + stHouse;
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
