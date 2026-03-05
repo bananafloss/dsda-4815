@@ -508,9 +508,17 @@
 
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
+            if (district !== null {
+                tooltipContent +='<br>District ' + district;
+                
+            } else {
+                tooltipContent+= '<br>Statewide'; 
+            }
+            
             if (county) tooltipContent += '<br>' + county + ' County';
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
+
             } else {
                 tooltipContent += '<br><em>No data for this race</em>';
             }
