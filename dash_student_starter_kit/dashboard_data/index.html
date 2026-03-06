@@ -1,3 +1,8 @@
+<!--Emma Wishneski edits:
+Added three lines to the tooltip content in onEachPrecinct() to display the US House, 
+State Senate, and State House district numbers from feature.properties.
+See code around lines 513-515 and 520-522 -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -505,10 +510,16 @@
             const precinctName = state.data.precinctNames[shpIdx];
             const displayName = precinctName ? precinctName.elec_name : feature.properties.name;
             const county = precinctName ? precinctName.county : '';
-
+            const usHouseDistrict = feature.properties.congress_dist ?? "N/A";
+            const stateSenateDistrict = feature.properties.senate_dist ?? "N/A";
+            const stateHouseDistrict = feature.properties.house_dist ?? "N/A";
+            
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
             if (county) tooltipContent += '<br>' + county + ' County';
+            tooltipContent += '<br>US House District: ' + usHouseDistrict;
+            tooltipContent += '<br>State Senate District: ' + stateSenateDistrict;
+            tooltipContent += '<br>State House District: ' + stateHouseDistrict;
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
