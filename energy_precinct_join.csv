@@ -1,0 +1,107 @@
+plantName,technology,nameplate_capacity_mw,county,precinct_name,congressional_district,state_senate_district,state_house_district
+Osage (IA),Solar Photovoltaic,0.8,Mitchell,Osage 4,1,26,51
+Osage (IA),Onshore Wind Turbine,1.6,Mitchell,Osage 4,1,26,51
+Iowa Distributed Wind Generation Project,Onshore Wind Turbine,2.3,Kossuth,Kossuth 13,4,4,8
+Storm Lake 1,Onshore Wind Turbine,0.7,Buena Vista,Cherokee 1,4,2,3
+Storm Lake 1,Onshore Wind Turbine,0.7,Buena Vista,Cherokee 1,4,2,3
+Storm Lake 1,Onshore Wind Turbine,112.5,Buena Vista,Cherokee 1,4,2,3
+Storm Lake II,Onshore Wind Turbine,80.2,Buena Vista,Cherokee 1,4,2,3
+Top of Iowa Windfarm,Onshore Wind Turbine,80,Worth,Worth 2-1,1,26,51
+Hawkeye Power Partners LLC,Onshore Wind Turbine,42,Cerro Gordo,Clear Lake/Grant/Union,4,27,54
+Hancock County Wind Energy Center,Onshore Wind Turbine,98,Hancock,Hancock County Precinct 7,4,4,8
+Flying Cloud Power Partners LLC,Onshore Wind Turbine,43.5,Dickinson,Dickinson 1,4,1,1
+Intrepid,Onshore Wind Turbine,160.5,Buena Vista,Schaller,4,6,11
+Intrepid,Onshore Wind Turbine,15,Buena Vista,Schaller,4,6,11
+Century,Onshore Wind Turbine,185,Hamilton,Big 6,4,4,8
+Century,Onshore Wind Turbine,35,Hamilton,Big 6,4,4,8
+Century,Onshore Wind Turbine,15,Hamilton,Big 6,4,4,8
+Whispering Willow Wind Farm - East,Onshore Wind Turbine,199.7,Franklin,Franklin County Precinct 2,4,27,54
+Victory Wind Farm,Onshore Wind Turbine,99,Carroll,Northeast,4,6,12
+Northern Iowa Windpower II,Onshore Wind Turbine,80,Worth,Worth 2-2,1,26,51
+Top of Iowa Windfarm III,Onshore Wind Turbine,29.7,Worth,Worth 2-2,1,26,51
+Pomeroy Wind Farm,Onshore Wind Turbine,123,Pocahontas,Pocahontas County Precinct 6,4,5,10
+Pomeroy Wind Farm,Onshore Wind Turbine,75,Pocahontas,Pocahontas County Precinct 6,4,5,10
+Pomeroy Wind Farm,Onshore Wind Turbine,58.5,Pocahontas,Pocahontas County Precinct 6,4,5,10
+Pomeroy Wind Farm,Onshore Wind Turbine,29.9,Pocahontas,Pocahontas County Precinct 6,4,5,10
+Osceola Windpower LLC,Onshore Wind Turbine,100,Osceola,Harris,4,1,1
+Charles City Wind Farm,Onshore Wind Turbine,75,Floyd,St. Charles-Riverton,4,26,52
+Winnebago Wind Power Project,Onshore Wind Turbine,20,Winnebago,Winnebago Precinct 3-2,4,4,7
+Barton Windpower LLC,Onshore Wind Turbine,28,Worth,Worth 1-1,1,26,51
+Barton Windpower LLC,Onshore Wind Turbine,132,Worth,Worth 1-1,1,26,51
+Pioneer Prairie Wind Farm,Onshore Wind Turbine,300,Mitchell,Mitchell 3,1,26,51
+Carroll Wind Farm,Onshore Wind Turbine,150,Carroll,Carroll Precinct 5,4,6,12
+Adair Wind Farm,Onshore Wind Turbine,174.8,Adair,Adair 1NW,3,10,20
+Walnut Wind Farm,Onshore Wind Turbine,153,Pottawattamie,Walnut,3,11,21
+Crane Creek Wind Energy Center,Onshore Wind Turbine,99,Howard,Riceville-Jamestown-Oakdale,1,26,51
+Crosswind Energy Project,Onshore Wind Turbine,21,Palo Alto,Logan/Gillett Grove,4,1,2
+Hardin Hilltop Wind LLC,Onshore Wind Turbine,14.7,Greene,Greene Co Central,4,24,47
+Osceola Windpower II,Onshore Wind Turbine,50,Osceola,Harris,4,1,1
+FPL Energy Crystal Lake Wind LLC,Onshore Wind Turbine,150,Hancock,Hancock County Precinct 2,4,4,8
+FPL Energy Story Wind LLC,Onshore Wind Turbine,150,Story,Sherman,4,25,49
+FPL Energy Crystal Lake Wind II LLC,Onshore Wind Turbine,200,Hancock,Winnebago Precinct 3-2,4,4,7
+Lost Lakes Wind Farm LLC,Onshore Wind Turbine,100,Dickinson,Dickinson 1,4,1,1
+Waverly Community Wind Project,Onshore Wind Turbine,0.9,Bremer,Bremer County Waverly Ward 2 Precinct,1,32,63
+Waverly Community Wind Project,Onshore Wind Turbine,0.9,Bremer,Bremer County Waverly Ward 2 Precinct,1,32,63
+Waverly Community Wind Project,Onshore Wind Turbine,0.9,Bremer,Bremer County Waverly Ward 2 Precinct,1,32,63
+Lakota Wind Wind Farm,Onshore Wind Turbine,10.5,Kossuth,Kossuth 2,4,4,7
+Iowa Lakes Superior Wind Farm,Onshore Wind Turbine,10.5,Dickinson,Dickinson 4,4,1,1
+Iowa Lakes Community College Wind Farm,Onshore Wind Turbine,1,Emmet,Estherville Precinct/ Ward 5,4,4,7
+Elk Wind Farm,Onshore Wind Turbine,40.8,Delaware,Delaware County Precinct 5,1,48,96
+Crystal Lake 3 LLC,Onshore Wind Turbine,66,Winnebago,Winnebago Precinct 3-1,4,4,7
+Garden Wind LLC,Onshore Wind Turbine,150,Hardin,Hardin Cnty Concord/ Sherman/ Grant/ Tip,4,25,49
+Laurel Wind Farm,Onshore Wind Turbine,119.6,Marshall,Jefferson,1,36,72
+Rolling Hills Wind Farm,Onshore Wind Turbine,443.9,Cass,CASS 9,3,11,21
+New Harvest Wind Project LLC,Onshore Wind Turbine,100,Crawford,"Schleswig, Ricketts, and Kiron",4,9,18
+Wolverine,Onshore Wind Turbine,1.5,Adair,Adair 2NE,3,10,20
+Bulldog,Onshore Wind Turbine,1.5,Adair,Adair 4SE,3,10,20
+Rippey Wind Farm,Onshore Wind Turbine,50,Greene,Greene Co East,4,24,47
+Hawkeye Wind Farm,Onshore Wind Turbine,35,Bremer,Bethel-Windsor,1,28,55
+Franklin County Wind Farm,Onshore Wind Turbine,99,Franklin,Franklin County Precinct 3,4,27,54
+Eclipse Wind Farm,Onshore Wind Turbine,200.1,Guthrie,Guthrie - Black,3,10,20
+Vienna Wind Farm,Onshore Wind Turbine,44.6,Marshall,Marion/Vienna,1,36,71
+Vienna Wind Farm,Onshore Wind Turbine,105.6,Marshall,Marion/Vienna,1,36,71
+Morning Light Wind Farm,Onshore Wind Turbine,101.2,Adair,Adair 1NW,3,10,20
+Pocahontas Prairie Wind Farm,Onshore Wind Turbine,80,Pocahontas,Pocahontas County Precinct 7,4,5,10
+Buffalo Center Wind LLC,Onshore Wind Turbine,1.5,Mitchell,Mitchell 1,1,26,51
+"Anchor Wind, LLC",Onshore Wind Turbine,6,Cedar,Fremont/Red Oak,2,37,73
+Windwalkers LLC,Onshore Wind Turbine,1.6,Worth,Worth 2-2,1,26,51
+Roeder Family Wind Farm LLC,Onshore Wind Turbine,1.6,Worth,Worth 2-3,1,26,51
+Luther College Wind Project,Onshore Wind Turbine,1.6,Winneshiek,Winneshiek 6,1,28,55
+NLMU Wind,Onshore Wind Turbine,1.5,Henry,Henry 9,2,42,84
+Junction Hilltop Wind Farm,Onshore Wind Turbine,8,Greene,Greene Co East,4,24,47
+Cumberland Rose,Onshore Wind Turbine,1.6,Adair,Adair 4SE,3,10,20
+Fontanelle,Onshore Wind Turbine,1.6,Adair,Adair 1NW,3,10,20
+Greenfield Wind,Onshore Wind Turbine,1.6,Adair,Adair 3SW,3,10,20
+Meadow Ridge,Onshore Wind Turbine,1.6,Adair,Adair 2NE,3,10,20
+Sky Volt,Onshore Wind Turbine,1.6,Adair,Adair 3SW,3,10,20
+Wiota,Onshore Wind Turbine,1.6,Cass,Cass 7 - Benton and Franklin/Wiota,3,10,20
+Highland Wind Project (IA),Onshore Wind Turbine,16.4,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,100.8,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,89.1,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,89.2,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,115,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,86.8,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Highland Wind Project (IA),Onshore Wind Turbine,4.7,O'Brien,O'Brien 7 - Summit-Center-Dale-Highland,4,2,3
+Lundgren  Wind Project,Onshore Wind Turbine,251,Webster,Clay/Roland,4,5,10
+Macksburg  Wind Project,Onshore Wind Turbine,119.6,Madison,Grand River-Monroe-Webster,3,13,25
+Wellsburg Wind Project,Onshore Wind Turbine,140.8,Grundy,Grundy Precinct 3,4,25,50
+Story City Wind Project,Onshore Wind Turbine,1.5,Story,Lafayette,4,24,48
+Traer Wind Project,Onshore Wind Turbine,1.5,Tama,Tama 1 - Buckingham/Perry/East Crystal,1,36,72
+Carroll Area Wind Farm,Onshore Wind Turbine,20.7,Carroll,Carroll Precinct 12,4,6,12
+Leonardo Wind 1 LLC,Onshore Wind Turbine,3,Hardin,Hardin County Alden/ Buckeye Precinct,4,25,50
+Michelangelo Wind 4 LLC,Onshore Wind Turbine,3,Boone,Boone-Rural Precinct 1,4,24,48
+Adams Wind,Onshore Wind Turbine,4.7,Adams,Adams County District 5 Precinct,3,11,21
+Adams Wind,Onshore Wind Turbine,43.3,Adams,Adams County District 5 Precinct,3,11,21
+Adams Wind,Onshore Wind Turbine,58,Adams,Adams County District 5 Precinct,3,11,21
+Adams Wind,Onshore Wind Turbine,48.3,Adams,Adams County District 5 Precinct,3,11,21
+Kirkwood Wind Turbine,Onshore Wind Turbine,2.5,Linn,Cedar Rapids 44,1,35,69
+O'Brien Wind,Onshore Wind Turbine,61.9,O'Brien,O'Brien 3 - Hartley-Lincoln-Omega,4,2,3
+O'Brien Wind,Onshore Wind Turbine,108.7,O'Brien,O'Brien 3 - Hartley-Lincoln-Omega,4,2,3
+O'Brien Wind,Onshore Wind Turbine,79.7,O'Brien,O'Brien 3 - Hartley-Lincoln-Omega,4,2,3
+Ida Grove Wind,Onshore Wind Turbine,61.1,Ida,Ida 4,4,9,17
+Ida Grove Wind,Onshore Wind Turbine,119.6,Ida,Ida 4,4,9,17
+Ida Grove Wind,Onshore Wind Turbine,92.8,Ida,Ida 4,4,9,17
+Ida Grove Wind,Onshore Wind Turbine,27.6,Ida,Ida 4,4,9,17
+Wind GEM,Onshore Wind Turbine,1.9,Adair,Adair 2NE,3,10,20
+Eastern Iowa Solar,Solar Photovoltaic,1.8,Muscatine,Muscatine County Wilton City Precinct,2,37,73
+Green Energy Machine,Onshore Wind Turbine,1.7,Cass,Cass 10,3,10,20

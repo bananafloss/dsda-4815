@@ -1,0 +1,110 @@
+---
+title: "Joining Election & Energy Project Data"
+author: "Sara Clokey"
+date: "2026-03-06"
+output: pdf_document
+---
+
+```{r}
+library(jsonlite)
+library(sf)
+library(dplyr)
+library(readr)
+```
+
+```{r}
+raw_renew <- fromJSON("C:/Users/18607/OneDrive - University of Connecticut/26 Spring/DSDA 4815/iowa-dashboard/renewables16.json")
+
+names(raw_renew)
+str(raw_renew)
+```
+
+```{r}
+plants <- raw_renew$response$data
+
+nrow(plants)
+```
+
+```{r}
+plants$latitude <- as.numeric(plants$latitude)
+plants$longitude <- as.numeric(plants$longitude)
+plants$`nameplate-capacity-mw` <- as.numeric(plants$`nameplate-capacity-mw`)
+```
+
+```{r}
+plants_spatial <- st_as_sf(
+  plants,
+  coords = c("longitude", "latitude"),
+  crs=4326
+)
+```
+
+```{r}
+precincts <- st_read("C:/Users/18607/OneDrive - University of Connecticut/26 Spring/DSDA 4815/iowa-dashboard/precincts.geojson")
+
+st_crs(precincts)
+```
+
+```{r}
+joined_plants <- st_join(
+  plants_spatial,
+  precincts,
+  join=st_within,
+  left=TRUE
+)
+
+names(joined_plants)
+```
+
+```{r}
+output <- joined_plants %>%
+  select(
+    plantName,
+    technology,
+    'nameplate-capacity-mw',
+    county,
+    name,
+    congress_dist,
+    senate_dist,
+    house_dist
+  )
+
+output <- output %>%
+  rename(
+    precinct_name = name,
+    congressional_district = congress_dist,
+    state_senate_district = senate_dist,
+    state_house_district = house_dist,
+    nameplate_capacity_mw = `nameplate-capacity-mw`
+  )
+```
+
+```{r}
+output_tab <- st_drop_geometry(output)
+
+write_csv(output_tab, "energy_precinct_join.csv")
+```
+
+**a. How many of the 106 plants successfully matched to a precinct? If any didn't match, why might that be?**
+
+```{r}
+sum(!is.na(joined_plants$precinct))
+```
+According to the above code, all 106 plants (and all 106 rows in the joined data frame) successfully matched to a precinct. This is confirmed by looking over the output CSV file.
+
+**b. The plant data includes a county field from the EIA. Does it always agree with the county implied by the precinct name? If not, what might explain the discrepancy?**
+
+```{r}
+View(joined_plants[, c("county", "name")])
+```
+
+No, the plant data's county field does not always agree with the county implied by the precinct name. This discrepancy might come from changes in precinct boundaries over time, or because the naming conventions for the precinct are not intuitively connected to a county (name includes multiple counties, uses local precinct names, or is ambiguous).
+
+**c. You'll notice some plants share the same coordinates. Why does this happen, and how does it affect the spatial join results?**
+
+This coordinate sharing occurs because the data frame includes individual generators. If there are multiple generators on the same farm/facility, then those generators will share coordinates. This will affect the spatial join results by plotting several plants in the exact same location, which is not accurate to their exact location.
+
+**d. What is a limitation of using a single lat/long point to represent a large wind farm that might have turbines spread across a wide area?**
+
+One limitation of using a single lat/long point to represent a large wind farm is that wind farms that might spread over multiple counties/precincts/districts are assigned to a single county/precinct/district based on the single coordinate point. This influences analysis of voting patterns by not including all relevant stakeholder populations for each plant.
+
