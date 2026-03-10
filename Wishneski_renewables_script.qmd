@@ -1,0 +1,161 @@
+---
+title: "Renewables"
+author: "Emma Wishneski"
+toc: true
+number-sections: true
+highlight-style: pygments
+format: 
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
+---
+
+# Importing the libraries
+```{python}
+import pandas as pd
+import geopandas as gpd
+import json
+```
+
+# the file paths
+```{python}
+RENEWABLE_FILE = "dashboard_data/renewables16.json"
+PRECINCT_FILE = "dashboard_data/precincts.geojson"
+OUTPUT_FILE = "dashboard_data/renewables_precinct_join.csv"
+```
+
+# loading the json file
+```{python}
+with open(RENEWABLE_FILE, "r", encoding="utf-8") as f:
+    raw = json.load(f)
+```
+
+```{python}
+plants = pd.DataFrame(raw["response"]["data"])
+```
+
+```{python}
+print("Total plants in JSON:", len(plants))
+print("Plant columns:")
+print(plants.columns.tolist())
+```
+
+
+# cleaning the plant data so its ready for spatial join:
+
+## converting the lat/long to numeric type
+```{python}
+plants["latitude"] = pd.to_numeric(plants["latitude"], errors="coerce")
+plants["longitude"] = pd.to_numeric(plants["longitude"], errors="coerce")
+
+```
+
+## converting capacity variable to numeric:
+```{python}
+plants["nameplate-capacity-mw"] = pd.to_numeric(
+    plants["nameplate-capacity-mw"],
+    errors="coerce"
+)
+```
+
+## remove missing lat/long
+```{python}
+plants = plants.dropna(subset=["latitude", "longitude"]).copy()
+
+```
+
+# Create actual geopoints for lat/long
+```{python}
+plants_gdf = gpd.GeoDataFrame(
+    plants,
+    geometry=gpd.points_from_xy(plants["longitude"], plants["latitude"]),
+    crs="EPSG:4326"
+)
+```
+
+# Loading and reading the precinct data
+```{python}
+precincts = gpd.read_file(PRECINCT_FILE)
+
+print("\nPrecinct columns:")
+print(precincts.columns.tolist())
+
+```
+
+## make consistent crs for project
+```{python}
+if precincts.crs is None:
+    precincts = precincts.set_crs("EPSG:4326")
+else:
+    precincts = precincts.to_crs("EPSG:4326")
+```
+
+# Perform spatial join
+```{python}
+joined = gpd.sjoin(
+    plants_gdf,
+    precincts,
+    how="left",
+    predicate="within"
+)
+
+print("\nRows after spatial join:", len(joined))
+
+```
+## returned 106 rows, good check to make sure its going smoothly
+
+# Export to cleaned csv
+```{python}
+final_df = joined[
+    [
+        "plantName",
+        "technology",
+        "nameplate-capacity-mw",
+        "county",
+        "name",
+        "congress_dist",
+        "senate_dist",
+        "house_dist"
+    ]
+].rename(columns={
+    "plantName": "plant_name",
+    "technology": "technology",
+    "nameplate-capacity-mw": "capacity_mw",
+    "county": "county",
+    "name": "precinct_name",
+    "congress_dist": "us_house_district",
+    "senate_dist": "state_senate_district",
+    "house_dist": "state_house_district"
+})
+
+```
+
+```{python}
+final_df.to_csv(OUTPUT_FILE, index=False)
+```
+
+```{python}
+print("\nCSV written to:", OUTPUT_FILE)
+print("Final row count:", len(final_df))
+print("\nPreview:")
+print(final_df.head())
+```
+
+
+# Questions
+## How many plants matched to a precinct?
+```{python}
+print(final_df["precinct_name"].notna().sum())
+```
+
+Answer: 106 matched
+
+## Does county always match the precinct name?
+Probably not always. The reason for this could be that the precinct naming does not always accurately reflect the county name. Some plants also may lie near or on county borders which may be a gray zone. EIA county field could also use an admin label rather than the exact location.
+
+## why do some plants share coordinates? 
+This is most likely due to multiple generating units located at the same facility. This could cause several rows to spacially join to the same precinct. 
+
+## Limitation
+Potential oversimplification. A wind farm may cover a large area across multiple precincts or districts, but one point reduces it to a single location. That can oversimplify where the project actually operates.
