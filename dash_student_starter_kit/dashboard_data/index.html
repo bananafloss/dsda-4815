@@ -1,3 +1,6 @@
+    <!-- EDIT NOTE: Added district numbers to the precinct rollover tooltip.
+     Changes in onEachPrecinct() around lines 499–520. -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -509,6 +512,9 @@
             // Build tooltip content
             let tooltipContent = '<strong>' + displayName + '</strong>';
             if (county) tooltipContent += '<br>' + county + ' County';
+            tooltipContent += '<br>US House District: ' + feature.properties.congress_dist;
+            tooltipContent += '<br>State Senate District: ' + feature.properties.senate_dist;
+            tooltipContent += '<br>State House District: ' + feature.properties.house_dist;
             if (rShare !== null) {
                 tooltipContent += '<br>R Two-Party Share: ' + rShare.toFixed(1) + '%';
             } else {
