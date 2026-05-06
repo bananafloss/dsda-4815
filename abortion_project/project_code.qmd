@@ -1,0 +1,1708 @@
+---
+title: "Homework Assignment 2"
+author: "Jack Perkins"
+toc: true
+number-sections: true
+highlight-style: pygments
+format:
+  html: 
+    code-fold: true
+    html-math-method: katex
+    embed-resources: true
+    self-contained-math: true	
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
+##  docx: Never, unless to accommodate a collaborator
+---
+
+# Starter Merges
+```{python}
+import os
+import pandas as pd
+
+# =========================================================
+# 1. Set working directory
+# =========================================================
+os.chdir(r"C:\Users\jtper\OneDrive\Documents\Capstone\project_data")
+
+# =========================================================
+# 2. Load files
+# =========================================================
+crime = pd.read_csv("state_crime.csv")
+abortion = pd.read_csv("abortion_table.csv")
+policy = pd.read_csv("abortion_policy_2000.csv")
+
+unemp = pd.read_excel(
+    "unemployment_data.xlsx",
+    skiprows=7,
+    names=[
+        "fips",
+        "state",
+        "year",
+        "civilian_noninstitutional_population",
+        "civilian_labor_force_total",
+        "labor_force_pct",
+        "employment_total",
+        "employment_pct",
+        "unemployment_total",
+        "unemployment_rate"
+    ]
+)
+
+gdp = pd.read_csv("gdp_table.csv", skiprows=3)
+
+# =========================================================
+# 3. Clean column names
+# =========================================================
+for df_ in [crime, abortion, policy, unemp]:
+    df_.columns = df_.columns.str.lower().str.strip()
+
+gdp.columns = gdp.columns.str.strip()
+
+# =========================================================
+# 4. State name -> abbreviation map
+# =========================================================
+state_map = {
+    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
+    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
+    "District of Columbia": "DC", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
+    "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+    "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME",
+    "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN",
+    "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE",
+    "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
+    "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
+    "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
+    "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX",
+    "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+    "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+}
+
+# =========================================================
+# 5. Clean abortion data
+# =========================================================
+abortion["state"] = abortion["state"].astype(str).str.strip().str.upper()
+abortion["year"] = pd.to_numeric(abortion["year"], errors="coerce").astype("Int64")
+
+# =========================================================
+# 6. Clean crime data
+#    Handles either abbreviations or full state names
+# =========================================================
+crime["state"] = crime["state"].astype(str).str.strip()
+crime["state"] = crime["state"].replace(state_map).str.upper()
+crime["year"] = pd.to_numeric(crime["year"], errors="coerce").astype("Int64")
+
+# =========================================================
+# 7. Clean unemployment data
+# =========================================================
+unemp["state"] = (
+    unemp["state"]
+    .astype(str)
+    .str.strip()
+    .replace(state_map)
+    .str.upper()
+)
+
+unemp["year"] = pd.to_numeric(unemp["year"], errors="coerce").astype("Int64")
+unemp["unemployment_rate"] = pd.to_numeric(unemp["unemployment_rate"], errors="coerce")
+unemp = unemp[unemp["state"].notna()].copy()
+
+# =========================================================
+# 8. Clean GDP data
+# =========================================================
+gdp = gdp[gdp["Description"] == "Current-dollar GDP (millions of current dollars)"].copy()
+gdp = gdp.rename(columns={"GeoName": "state"})
+
+year_cols = [col for col in gdp.columns if str(col).isdigit()]
+
+gdp = gdp[["state"] + year_cols].melt(
+    id_vars="state",
+    value_vars=year_cols,
+    var_name="year",
+    value_name="gdp"
+)
+
+gdp["state"] = (
+    gdp["state"]
+    .astype(str)
+    .str.strip()
+    .replace(state_map)
+    .str.upper()
+)
+
+gdp["year"] = pd.to_numeric(gdp["year"], errors="coerce").astype("Int64")
+gdp["gdp"] = pd.to_numeric(gdp["gdp"], errors="coerce")
+gdp = gdp[gdp["state"].isin(abortion["state"].unique())].copy()
+
+# =========================================================
+# 9. Clean policy data
+# =========================================================
+policy["state"] = (
+    policy["state"]
+    .astype(str)
+    .str.strip()
+    .replace(state_map)
+    .str.upper()
+)
+
+policy = policy[["state", "policy_score"]].drop_duplicates()
+
+# =========================================================
+# 10. Diagnose key matching before merge
+# =========================================================
+print("Crime columns:")
+print(crime.columns.tolist())
+
+print("\nCrime head:")
+print(crime.head())
+
+print("\nAbortion states sample:")
+print(sorted(abortion["state"].dropna().unique())[:10])
+
+print("\nCrime states sample:")
+print(sorted(crime["state"].dropna().unique())[:10])
+
+print("\nAbortion years sample:")
+print(sorted(abortion["year"].dropna().unique())[:10])
+
+print("\nCrime years sample:")
+print(sorted(crime["year"].dropna().unique())[:10])
+
+ab_keys = abortion[["state", "year"]].drop_duplicates()
+cr_keys = crime[["state", "year"]].drop_duplicates()
+
+matches = ab_keys.merge(cr_keys, on=["state", "year"], how="inner")
+print("\nAbortion keys:", ab_keys.shape[0])
+print("Crime keys:", cr_keys.shape[0])
+print("Matching keys:", matches.shape[0])
+
+nonmatches = ab_keys.merge(cr_keys, on=["state", "year"], how="left", indicator=True)
+print("\nSample unmatched abortion state-year pairs:")
+print(nonmatches[nonmatches["_merge"] == "left_only"].head(20))
+
+# =========================================================
+# 11. Test crime merge only
+# =========================================================
+crime_cols_to_merge = [c for c in [
+    "state",
+    "year",
+    "data.rates.violent.all",
+    "data.rates.property.all",
+    "data.rates.violent.murder",
+    "data.rates.violent.rape",
+    "data.rates.violent.robbery",
+    "data.rates.violent.assault"
+] if c in crime.columns]
+
+test_merge = abortion.merge(
+    crime[crime_cols_to_merge],
+    on=["state", "year"],
+    how="left"
+)
+
+print("\nCrime merge test head:")
+print(test_merge.head())
+
+if "data.rates.violent.all" in test_merge.columns:
+    print("\nMissing share for violent crime after test merge:")
+    print(test_merge["data.rates.violent.all"].isna().mean())
+
+if "data.rates.property.all" in test_merge.columns:
+    print("Missing share for property crime after test merge:")
+    print(test_merge["data.rates.property.all"].isna().mean())
+
+# =========================================================
+# 12. Final merged Casey project panel
+# =========================================================
+df = abortion.merge(crime, on=["state", "year"], how="left")
+df = df.merge(unemp, on=["state", "year"], how="left")
+df = df.merge(gdp, on=["state", "year"], how="left")
+df = df.merge(policy, on="state", how="left")
+
+# =========================================================
+# 13. Inspect final result
+# =========================================================
+print("\nFinal merged dataset shape:")
+print(df.shape)
+
+check_cols = [c for c in [
+    "state",
+    "year",
+    "abortionratetotal",
+    "data.rates.violent.all",
+    "data.rates.property.all",
+    "unemployment_rate",
+    "gdp",
+    "policy_score"
+] if c in df.columns]
+
+print("\nPreview of key columns:")
+print(df[check_cols].head(20))
+
+print("\nMissingness in key columns:")
+print(df[check_cols].isna().mean())
+```
+
+# Census Clean
+```{python}
+import os
+import re
+import pandas as pd
+
+os.chdir(r"C:\Users\jtper\OneDrive\Documents\Capstone\project_data")
+
+state_map = {
+    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
+    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
+    "District of Columbia": "DC", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
+    "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+    "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME",
+    "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN",
+    "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE",
+    "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
+    "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
+    "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
+    "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX",
+    "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+    "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+}
+
+def clean_col(x):
+    x = str(x).strip().lower()
+    x = x.replace("estimate!!", "")
+    x = x.replace("margin of error!!", "moe_")
+    x = x.replace("margin_of_error!!", "moe_")
+    x = x.replace("percent!!", "pct_")
+    x = x.replace("!!", "_")
+    x = x.replace(" ", "_")
+    x = x.replace(",", "")
+    x = x.replace("-", "_")
+    x = x.replace("/", "_")
+    x = x.replace("(", "")
+    x = x.replace(")", "")
+    x = x.replace("'", "")
+    x = x.replace(":", "")
+    x = re.sub(r"[^a-z0-9_]", "", x)
+    x = re.sub(r"_+", "_", x).strip("_")
+    return x if x else "unknown"
+
+def make_unique(cols):
+    counts = {}
+    out = []
+    for col in cols:
+        if col not in counts:
+            counts[col] = 0
+            out.append(col)
+        else:
+            counts[col] += 1
+            out.append(f"{col}_{counts[col]}")
+    return out
+
+acs_files = [
+    ("census_data/ACSSPP1Y2010.S0201-Data.csv", 2010),
+    ("census_data/ACSSPP1Y2011.S0201-Data.csv", 2011),
+    ("census_data/ACSSPP1Y2012.S0201-Data.csv", 2012),
+    ("census_data/ACSSPP1Y2013.S0201-Data.csv", 2013),
+    ("census_data/ACSSPP1Y2014.S0201-Data.csv", 2014),
+    ("census_data/ACSSPP1Y2015.S0201-Data.csv", 2015),
+    ("census_data/ACSSPP1Y2016.S0201-Data.csv", 2016),
+    ("census_data/ACSSPP1Y2017.S0201-Data.csv", 2017),
+    ("census_data/ACSSPP1Y2018.S0201-Data.csv", 2018),
+    ("census_data/ACSSPP1Y2019.S0201-Data.csv", 2019),
+]
+
+acs_list = []
+
+for file, year in acs_files:
+    header_rows = pd.read_csv(file, header=None, nrows=2, low_memory=False)
+    descriptive_names = [clean_col(x) for x in header_rows.iloc[1].fillna("")]
+    descriptive_names = make_unique(descriptive_names)
+
+    temp = pd.read_csv(file, skiprows=2, header=None, low_memory=False)
+    temp.columns = descriptive_names
+
+    # drop fully empty columns that often appear in ACS exports
+    temp = temp.loc[:, ~temp.columns.str.match(r"^unknown(_\d+)?$")]
+
+    possible_name_cols = [c for c in temp.columns if "name" in c]
+    if not possible_name_cols:
+        raise ValueError(f"No NAME-like column found in {file}. First 25 columns: {temp.columns.tolist()[:25]}")
+
+    name_col = possible_name_cols[0]
+    temp[name_col] = temp[name_col].astype(str).str.strip()
+
+    temp = temp[temp[name_col].isin(state_map.keys())].copy()
+    temp["state"] = temp[name_col].map(state_map)
+    temp["year"] = year
+
+    # ensure columns are unique again after filtering
+    temp.columns = make_unique(temp.columns)
+
+    acs_list.append(temp)
+
+acs = pd.concat(acs_list, ignore_index=True, sort=False)
+
+acs = acs.drop_duplicates(subset=["state", "year"])
+
+for col in acs.columns:
+    if col not in ["state", "year"] and "name" not in col:
+        acs[col] = pd.to_numeric(acs[col], errors="coerce")
+
+print("ACS shape:", acs.shape)
+print(acs[["state", "year"]].head())
+print(acs.columns.tolist()[:80])
+
+df = df.merge(acs, on=["state", "year"], how="left")
+
+print("Merged df shape after ACS:", df.shape)
+print(df[["state", "year", "abortionratetotal", "unemployment_rate", "gdp", "policy_score"]].head(10))
+
+```
+
+
+# Data Cleaning
+```{python}
+base_vars = [
+    "state",
+    "year",
+    "abortionratetotal",
+    "unemployment_rate",
+    "data.rates.violent.all",
+    "gdp",
+    "policy_score"
+]
+
+age_vars = [
+    "sex_and_age_18_to_24_years",
+    "sex_and_age_25_to_34_years",
+    "sex_and_age_35_to_44_years",
+    "sex_and_age_45_to_54_years"
+]
+
+sex_vars = [
+    "sex_and_age_male",
+    "sex_and_age_female"
+]
+
+edu_vars = [
+    "educational_attainment_high_school_graduate_or_higher",
+    "educational_attainment_bachelors_degree_or_higher"
+]
+
+income_vars = [
+    "income_in_the_past_12_months_in_2010_inflation_adjusted_dollars_median_household_income_dollars"
+]
+
+race_vars = [
+    "total_number_of_races_reported_one_race",
+    "total_number_of_races_reported_two_races",
+    "total_number_of_races_reported_three_races"
+]
+
+keep_vars = (
+    base_vars
+    + age_vars
+    + sex_vars
+    + edu_vars
+    + income_vars
+    + race_vars
+)
+
+df_final = df[keep_vars].copy()
+
+print("Final dataset shape:", df_final.shape)
+df_final.head()
+```
+
+```{python}
+df_final.to_csv("df_final.csv", index=False)
+```
+
+
+# Simple and Robust Model
+```{python}
+import pandas as pd
+import statsmodels.api as sm
+
+# =====================================================
+# 1. Start from your merged panel df
+# =====================================================
+df = df.copy()
+df["state"] = df["state"].astype(str).str.strip().str.upper()
+df["year"] = pd.to_numeric(df["year"], errors="coerce")
+
+# Choose crime outcome
+crime_var = "data.rates.violent.all"
+# crime_var = "data.rates.property.all"
+# crime_var = "data.rates.violent.murder"
+
+# Make sure core variables are numeric
+base_numeric = [
+    "abortionratetotal",
+    "unemployment_rate",
+    "gdp",
+    crime_var,
+    "sex_and_age_18_to_24_years",
+    "sex_and_age_25_to_34_years",
+    "sex_and_age_35_to_44_years",
+    "sex_and_age_45_to_54_years",
+    "sex_and_age_male",
+    "educational_attainment_high_school_graduate_or_higher",
+    "educational_attainment_bachelors_degree_or_higher",
+]
+for col in base_numeric:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+# =====================================================
+# 2. Build cohort-style abortion exposure:
+#    average abortion rate from 18 to 25 years earlier
+# =====================================================
+lag_frames = []
+
+for lag in range(18, 26):
+    temp = df[["state", "year", "abortionratetotal"]].copy()
+    temp["year"] = temp["year"] + lag
+    temp = temp.rename(columns={"abortionratetotal": f"abortion_lag_{lag}"})
+    lag_frames.append(temp)
+
+df_exposure = df.copy()
+for temp in lag_frames:
+    df_exposure = df_exposure.merge(temp, on=["state", "year"], how="left")
+
+lag_cols = [f"abortion_lag_{lag}" for lag in range(18, 26)]
+
+# Average exposure across the full 18–25 window
+df_exposure["abortion_exposure_18_25"] = df_exposure[lag_cols].mean(axis=1)
+
+# Optional: count how many lag years are actually observed
+df_exposure["abortion_exposure_count"] = df_exposure[lag_cols].notna().sum(axis=1)
+
+print("Non-missing broader-lag exposure:", df_exposure["abortion_exposure_18_25"].notna().sum())
+print(df_exposure[["state", "year", "abortion_exposure_18_25", "abortion_exposure_count"]].head(30))
+
+# =====================================================
+# 3. Helper to run FE regression
+# =====================================================
+def run_fe_model(data, y_col, x_cols, cluster_col="state", min_exposure_count=None):
+    needed = ["state", "year", y_col] + x_cols
+    temp = data[needed].copy()
+
+    if min_exposure_count is not None and "abortion_exposure_count" in data.columns:
+        temp = temp.join(data["abortion_exposure_count"])
+        temp = temp[temp["abortion_exposure_count"] >= min_exposure_count].copy()
+
+    temp["state"] = temp["state"].astype(str).str.strip().str.upper()
+    temp["year"] = pd.to_numeric(temp["year"], errors="coerce")
+    temp[y_col] = pd.to_numeric(temp[y_col], errors="coerce")
+
+    for c in x_cols:
+        temp[c] = pd.to_numeric(temp[c], errors="coerce")
+
+    print("\nMissingness before dropna:")
+    print(temp[needed].isna().mean().sort_values())
+
+    temp = temp.dropna(subset=needed).copy()
+    print("Rows used after dropna:", temp.shape[0])
+
+    if temp.empty:
+        raise ValueError("No rows remain after dropna().")
+
+    temp["year"] = temp["year"].astype(int)
+
+    y = temp[y_col].to_numpy(dtype=float)
+
+    X_main = temp[x_cols].astype(float).reset_index(drop=True)
+    state_fe = pd.get_dummies(temp["state"], prefix="state", drop_first=True, dtype=float).reset_index(drop=True)
+    year_fe = pd.get_dummies(temp["year"], prefix="year", drop_first=True, dtype=float).reset_index(drop=True)
+
+    X = pd.concat([X_main, state_fe, year_fe], axis=1)
+    X = sm.add_constant(X, has_constant="add")
+
+    model = sm.OLS(y, X.to_numpy(dtype=float)).fit(
+        cov_type="cluster",
+        cov_kwds={"groups": pd.Categorical(temp[cluster_col]).codes}
+    )
+
+    coef_table = pd.DataFrame(
+        {
+            "coef": model.params[: len(x_cols) + 1],
+            "pval": model.pvalues[: len(x_cols) + 1],
+        },
+        index=["const"] + x_cols,
+    )
+
+    return model, temp, coef_table
+
+# =====================================================
+# 4. MAIN MODEL
+#    Full panel with cohort-style abortion exposure
+# =====================================================
+main_x = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp",
+]
+
+main_model, df_main_used, main_table = run_fe_model(
+    df_exposure,
+    crime_var,
+    main_x,
+    min_exposure_count=1
+)
+
+print("\nMAIN MODEL SAMPLE SIZE:", df_main_used.shape)
+print("\nMAIN MODEL KEY COEFFICIENTS")
+print(main_table)
+print("\nMAIN MODEL R-SQUARED:", main_model.rsquared)
+
+# =====================================================
+# 5. ROBUST MODEL
+#    2010–2019 with a reduced ACS set
+#    Keep the ACS set modest so the sample survives
+# =====================================================
+robust_x = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp",
+    "sex_and_age_18_to_24_years",
+    "educational_attainment_bachelors_degree_or_higher",
+]
+
+df_robust = df_exposure[df_exposure["year"].between(2010, 2019)].copy()
+
+robust_model, df_robust_used, robust_table = run_fe_model(
+    df_robust,
+    crime_var,
+    robust_x,
+    min_exposure_count=1
+)
+
+print("\nROBUST MODEL SAMPLE SIZE:", df_robust_used.shape)
+print("\nROBUST MODEL KEY COEFFICIENTS")
+print(robust_table)
+print("\nROBUST MODEL R-SQUARED:", robust_model.rsquared)
+
+# =====================================================
+# 6. Compare core coefficients
+# =====================================================
+compare = pd.DataFrame({
+    "main_coef": main_table["coef"].reindex(["abortion_exposure_18_25", "unemployment_rate", "gdp"]),
+    "main_pval": main_table["pval"].reindex(["abortion_exposure_18_25", "unemployment_rate", "gdp"]),
+    "robust_coef": robust_table["coef"].reindex(["abortion_exposure_18_25", "unemployment_rate", "gdp"]),
+    "robust_pval": robust_table["pval"].reindex(["abortion_exposure_18_25", "unemployment_rate", "gdp"]),
+})
+
+print("\nCOMPARISON OF CORE COEFFICIENTS")
+print(compare)
+
+# =====================================================
+# 7. Optional diagnostics
+# =====================================================
+print("\nExposure count distribution:")
+print(df_exposure["abortion_exposure_count"].value_counts(dropna=False).sort_index())
+
+print("\nSample of lag columns:")
+print(df_exposure[["state", "year"] + lag_cols + ["abortion_exposure_18_25", "abortion_exposure_count"]].head(20))
+```
+
+
+# Weighted Model
+```{python}
+import statsmodels.api as sm
+import pandas as pd
+
+crime_var = "data.rates.violent.all"
+
+# =====================================================
+# 1. Prepare weighted dataset
+# =====================================================
+df_weighted = df_exposure.copy()
+
+# keep only rows with at least some exposure
+df_weighted = df_weighted[df_weighted["abortion_exposure_count"] >= 1].copy()
+
+# define weights
+df_weighted["weight"] = df_weighted["abortion_exposure_count"]
+
+# =====================================================
+# 2. Helper function for weighted FE model
+# =====================================================
+def run_weighted_fe_model(data, y_col, x_cols, weight_col, cluster_col="state"):
+    needed = ["state", "year", y_col, weight_col] + x_cols
+    temp = data[needed].copy()
+
+    temp["state"] = temp["state"].astype(str).str.strip().str.upper()
+    temp["year"] = pd.to_numeric(temp["year"], errors="coerce")
+    temp[y_col] = pd.to_numeric(temp[y_col], errors="coerce")
+
+    for c in x_cols:
+        temp[c] = pd.to_numeric(temp[c], errors="coerce")
+
+    print("\nMissingness before dropna:")
+    print(temp[needed].isna().mean().sort_values())
+
+    temp = temp.dropna().copy()
+    print("Rows used after dropna:", temp.shape[0])
+
+    if temp.empty:
+        raise ValueError("No rows remain after dropna().")
+
+    temp["year"] = temp["year"].astype(int)
+
+    y = temp[y_col].to_numpy(dtype=float)
+
+    X_main = temp[x_cols].astype(float).reset_index(drop=True)
+    state_fe = pd.get_dummies(temp["state"], drop_first=True, dtype=float).reset_index(drop=True)
+    year_fe = pd.get_dummies(temp["year"], drop_first=True, dtype=float).reset_index(drop=True)
+
+    X = pd.concat([X_main, state_fe, year_fe], axis=1)
+    X = sm.add_constant(X, has_constant="add")
+
+    weights = temp[weight_col].to_numpy(dtype=float)
+
+    # Weighted least squares
+    model = sm.WLS(y, X.to_numpy(dtype=float), weights=weights).fit(
+        cov_type="cluster",
+        cov_kwds={"groups": pd.Categorical(temp[cluster_col]).codes}
+    )
+
+    coef_table = pd.DataFrame({
+        "coef": model.params[:len(x_cols)+1],
+        "pval": model.pvalues[:len(x_cols)+1]
+    }, index=["const"] + x_cols)
+
+    return model, temp, coef_table
+
+
+# =====================================================
+# 3. Run weighted main model
+# =====================================================
+xvars = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp"
+]
+
+weighted_model, df_w_used, weighted_table = run_weighted_fe_model(
+    df_weighted,
+    crime_var,
+    xvars,
+    weight_col="weight"
+)
+
+print("\nWEIGHTED MODEL SAMPLE SIZE:", df_w_used.shape)
+print("\nWEIGHTED MODEL RESULTS")
+print(weighted_table)
+print("\nWEIGHTED MODEL R-SQUARED:", weighted_model.rsquared)
+```
+
+# Policy Model
+```{python}
+import pandas as pd
+import statsmodels.api as sm
+
+# =====================================================
+# 1. Prepare policy heterogeneity variables
+# =====================================================
+
+df_exposure = df_exposure.copy()
+
+# Make sure policy_score is numeric
+df_exposure["policy_score"] = pd.to_numeric(df_exposure["policy_score"], errors="coerce")
+
+# Define high-policy states using the median policy score
+median_policy = df_exposure["policy_score"].median()
+print("Median policy score:", median_policy)
+
+df_exposure["high_policy"] = df_exposure["policy_score"] > median_policy
+
+# Optional check
+policy_check = (
+    df_exposure[["state", "policy_score", "high_policy"]]
+    .drop_duplicates(subset=["state"])
+    .sort_values("policy_score")
+)
+print("\nSTATE POLICY GROUPS (sample)")
+print(policy_check.head(15))
+print("\nNumber of high-policy states:",
+      policy_check["high_policy"].sum())
+print("Number of low-policy states:",
+      (~policy_check["high_policy"]).sum())
+
+# =====================================================
+# 2. Define main regressors
+# =====================================================
+
+main_x = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp"
+]
+
+# =====================================================
+# 3. Run model for HIGH-policy states
+# =====================================================
+
+df_high = df_exposure[df_exposure["high_policy"] == True].copy()
+
+model_high, df_high_used, table_high = run_fe_model(
+    df_high,
+    crime_var,
+    main_x,
+    min_exposure_count=1
+)
+
+print("\nHIGH-POLICY MODEL SAMPLE SIZE:", df_high_used.shape)
+print("\nHIGH-POLICY MODEL RESULTS")
+print(table_high)
+print("\nHIGH-POLICY MODEL R-SQUARED:", model_high.rsquared)
+
+# =====================================================
+# 4. Run model for LOW-policy states
+# =====================================================
+
+df_low = df_exposure[df_exposure["high_policy"] == False].copy()
+
+model_low, df_low_used, table_low = run_fe_model(
+    df_low,
+    crime_var,
+    main_x,
+    min_exposure_count=1
+)
+
+print("\nLOW-POLICY MODEL SAMPLE SIZE:", df_low_used.shape)
+print("\nLOW-POLICY MODEL RESULTS")
+print(table_low)
+print("\nLOW-POLICY MODEL R-SQUARED:", model_low.rsquared)
+
+# =====================================================
+# 5. Compare coefficients across groups
+# =====================================================
+
+hetero_compare = pd.DataFrame({
+    "High Policy Coef": table_high["coef"].reindex(main_x),
+    "High Policy pval": table_high["pval"].reindex(main_x),
+    "Low Policy Coef": table_low["coef"].reindex(main_x),
+    "Low Policy pval": table_low["pval"].reindex(main_x),
+})
+
+print("\nHETEROGENEITY COMPARISON")
+print(hetero_compare)
+
+# =====================================================
+# 6. Interaction model in full sample
+# =====================================================
+# Note:
+# Since policy_score is time-invariant, high_policy alone will be
+# absorbed by state fixed effects in a standard FE setup.
+# The interaction term is still identified because abortion exposure
+# varies over time.
+
+df_exposure["high_policy_int"] = df_exposure["high_policy"].astype(int)
+
+df_exposure["abortionXhighpolicy"] = (
+    df_exposure["abortion_exposure_18_25"] *
+    df_exposure["high_policy_int"]
+)
+
+interaction_x = [
+    "abortion_exposure_18_25",
+    "abortionXhighpolicy",
+    "unemployment_rate",
+    "gdp"
+]
+
+interaction_model, df_int_used, interaction_table = run_fe_model(
+    df_exposure,
+    crime_var,
+    interaction_x,
+    min_exposure_count=1
+)
+
+print("\nINTERACTION MODEL SAMPLE SIZE:", df_int_used.shape)
+print("\nINTERACTION MODEL RESULTS")
+print(interaction_table)
+print("\nINTERACTION MODEL R-SQUARED:", interaction_model.rsquared)
+
+# =====================================================
+# 7. Interpret interaction model
+# =====================================================
+
+base_coef = interaction_table.loc["abortion_exposure_18_25", "coef"]
+base_pval = interaction_table.loc["abortion_exposure_18_25", "pval"]
+
+diff_coef = interaction_table.loc["abortionXhighpolicy", "coef"]
+diff_pval = interaction_table.loc["abortionXhighpolicy", "pval"]
+
+high_effect = base_coef + diff_coef
+
+print("\nINTERPRETATION OF INTERACTION MODEL")
+print(f"Effect in LOW-policy states: {base_coef:.4f} (p={base_pval:.4f})")
+print(f"Difference for HIGH-policy states: {diff_coef:.4f} (p={diff_pval:.4f})")
+print(f"Implied effect in HIGH-policy states: {high_effect:.4f}")
+
+# =====================================================
+# 8. Optional summary table
+# =====================================================
+
+summary_table = pd.DataFrame({
+    "Model": ["Low Policy", "High Policy", "Interaction: Low Baseline", "Interaction: High-Low Difference"],
+    "Coefficient": [
+        table_low.loc["abortion_exposure_18_25", "coef"],
+        table_high.loc["abortion_exposure_18_25", "coef"],
+        interaction_table.loc["abortion_exposure_18_25", "coef"],
+        interaction_table.loc["abortionXhighpolicy", "coef"]
+    ],
+    "P-value": [
+        table_low.loc["abortion_exposure_18_25", "pval"],
+        table_high.loc["abortion_exposure_18_25", "pval"],
+        interaction_table.loc["abortion_exposure_18_25", "pval"],
+        interaction_table.loc["abortionXhighpolicy", "pval"]
+    ]
+})
+
+print("\nSUMMARY OF HETEROGENEITY RESULTS")
+print(summary_table)
+```
+
+# Table Creation
+```{python}
+def make_regression_table(models):
+    rows_order = [
+        "abortion_exposure_18_25",
+        "unemployment_rate",
+        "gdp",
+        "sex_and_age_18_to_24_years",
+        "educational_attainment_bachelors_degree_or_higher",
+    ]
+
+    labels = {
+        "abortion_exposure_18_25": "Abortion exposure (18–25)",
+        "unemployment_rate": "Unemployment rate",
+        "gdp": "GDP",
+        "sex_and_age_18_to_24_years": "Population age 18–24",
+        "educational_attainment_bachelors_degree_or_higher": "Bachelor's+",
+    }
+
+    output = []
+
+    for var in rows_order:
+        coef_line = {"Variable": labels[var]}
+        p_line = {"Variable": ""}
+        
+        for model_name, info in models.items():
+            tab = info["table"]
+            if var in tab.index:
+                coef = tab.loc[var, "coef"]
+                pval = tab.loc[var, "pval"]
+                
+                stars = ""
+                if pval < 0.01:
+                    stars = "***"
+                elif pval < 0.05:
+                    stars = "**"
+                elif pval < 0.10:
+                    stars = "*"
+                
+                coef_line[model_name] = f"{coef:.3f}{stars}"
+                p_line[model_name] = f"({pval:.3f})"
+            else:
+                coef_line[model_name] = ""
+                p_line[model_name] = ""
+        
+        output.append(coef_line)
+        output.append(p_line)
+
+    output.append({
+        "Variable": "Observations",
+        **{name: len(info["used_df"]) for name, info in models.items()}
+    })
+    output.append({
+        "Variable": "R-squared",
+        **{name: f"{info['model'].rsquared:.3f}" for name, info in models.items()}
+    })
+    output.append({
+        "Variable": "State FE",
+        **{name: "Yes" for name in models}
+    })
+    output.append({
+        "Variable": "Year FE",
+        **{name: "Yes" for name in models}
+    })
+    output.append({
+        "Variable": "Clustered SE",
+        **{name: "State" for name in models}
+    })
+
+    return pd.DataFrame(output)
+
+models = {
+    "Main": {
+        "table": main_table,
+        "model": main_model,
+        "used_df": df_main_used
+    },
+    "Robust": {
+        "table": robust_table,
+        "model": robust_model,
+        "used_df": df_robust_used
+    },
+    "Weighted": {
+        "table": weighted_table,
+        "model": weighted_model,
+        "used_df": df_w_used
+    }
+}
+
+final_table = make_regression_table(models)
+final_table
+```
+
+# Policy Map
+```{python}
+import pandas as pd
+import plotly.express as px
+
+# one row per state
+policy_map = (
+    df[["state", "policy_score"]]
+    .dropna()
+    .drop_duplicates(subset=["state"])
+    .copy()
+)
+
+print(policy_map.head())
+
+fig = px.choropleth(
+    policy_map,
+    locations="state",
+    locationmode="USA-states",
+    color="policy_score",
+    scope="usa",
+    hover_name="state",
+    hover_data={"policy_score": True},
+    color_continuous_scale="RdBu",
+    title="Policy Score by State"
+)
+
+fig.update_layout(
+    coloraxis_colorbar_title="Policy Score"
+)
+
+fig.show()
+```
+
+# Coefficient Map
+```{python}
+import pandas as pd
+import statsmodels.api as sm
+import plotly.express as px
+import plotly.graph_objects as go
+
+crime_var = "data.rates.violent.all"
+
+xvars = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp"
+]
+
+results = []
+
+for state, g in df_exposure.groupby("state"):
+    temp = g[["state", "year", crime_var] + xvars].copy()
+
+    temp[crime_var] = pd.to_numeric(temp[crime_var], errors="coerce")
+    for col in xvars:
+        temp[col] = pd.to_numeric(temp[col], errors="coerce")
+
+    temp = temp.dropna().copy()
+
+    if temp.shape[0] < 5:
+        continue
+
+    year_fe = pd.get_dummies(temp["year"], drop_first=True, dtype=float)
+    X = pd.concat([temp[xvars], year_fe], axis=1)
+    X = sm.add_constant(X, has_constant="add")
+
+    try:
+        model = sm.OLS(temp[crime_var], X).fit()
+        if "abortion_exposure_18_25" not in model.params:
+            continue
+
+        results.append({
+            "state": state,
+            "coef": model.params["abortion_exposure_18_25"],
+            "pval": model.pvalues["abortion_exposure_18_25"],
+            "n_obs": temp.shape[0]
+        })
+    except Exception:
+        continue
+
+state_coefs = pd.DataFrame(results)
+state_coefs["state"] = state_coefs["state"].astype(str).str.strip().str.upper()
+state_coefs = state_coefs.dropna(subset=["coef"])
+
+print("Rows in state_coefs:", len(state_coefs))
+print(state_coefs.head())
+
+# Base map
+fig = px.choropleth(
+    state_coefs,
+    locations="state",
+    locationmode="USA-states",
+    color="coef",
+    scope="usa",
+    color_continuous_scale="RdBu_r",
+    hover_name="state",
+    hover_data={"coef": ":.3f", "pval": ":.3f", "n_obs": True},
+    title="State-Level Abortion Exposure Coefficients"
+)
+
+# Approximate state centroids for significance markers
+centers = {
+    "AL": (-86.8, 32.8), "AK": (-152.4, 64.2), "AZ": (-111.7, 34.3),
+    "AR": (-92.4, 34.9), "CA": (-119.7, 37.2), "CO": (-105.5, 39.0),
+    "CT": (-72.7, 41.6), "DE": (-75.5, 39.0), "FL": (-81.7, 27.8),
+    "GA": (-83.4, 32.7), "HI": (-157.5, 20.8), "ID": (-114.4, 44.2),
+    "IL": (-89.2, 40.0), "IN": (-86.1, 40.0), "IA": (-93.4, 42.1),
+    "KS": (-98.4, 38.5), "KY": (-85.3, 37.5), "LA": (-91.9, 31.1),
+    "ME": (-69.0, 45.3), "MD": (-76.7, 39.0), "MA": (-71.8, 42.3),
+    "MI": (-84.6, 44.3), "MN": (-94.3, 46.3), "MS": (-89.7, 32.7),
+    "MO": (-92.6, 38.5), "MT": (-110.0, 46.9), "NE": (-99.8, 41.5),
+    "NV": (-116.9, 39.3), "NH": (-71.6, 43.7), "NJ": (-74.5, 40.1),
+    "NM": (-106.1, 34.4), "NY": (-75.5, 42.9), "NC": (-79.4, 35.5),
+    "ND": (-100.5, 47.5), "OH": (-82.8, 40.3), "OK": (-97.5, 35.6),
+    "OR": (-120.5, 44.1), "PA": (-77.7, 40.9), "RI": (-71.5, 41.7),
+    "SC": (-80.9, 33.8), "SD": (-100.2, 44.4), "TN": (-86.4, 35.8),
+    "TX": (-99.3, 31.5), "UT": (-111.7, 39.3), "VT": (-72.7, 44.0),
+    "VA": (-78.7, 37.5), "WA": (-120.7, 47.4), "WV": (-80.6, 38.6),
+    "WI": (-89.9, 44.6), "WY": (-107.6, 43.0), "DC": (-77.0, 38.9)
+}
+
+sig = state_coefs[state_coefs["pval"] < 0.10].copy()
+sig["lon"] = sig["state"].map(lambda s: centers[s][0] if s in centers else None)
+sig["lat"] = sig["state"].map(lambda s: centers[s][1] if s in centers else None)
+sig = sig.dropna(subset=["lon", "lat"])
+
+fig.add_trace(go.Scattergeo(
+    lon=sig["lon"],
+    lat=sig["lat"],
+    text=["★"] * len(sig),
+    mode="text",
+    textfont=dict(size=14, color="black"),
+    hovertext=[
+        f"{row.state}<br>coef={row.coef:.3f}<br>p={row.pval:.3f}<br>N={row.n_obs}"
+        for row in sig.itertuples()
+    ],
+    hoverinfo="text",
+    name="p < 0.10"
+))
+
+fig.show()
+```
+
+# Variable Assignment
+```{python}
+import pandas as pd
+import statsmodels.api as sm
+
+crime_var = "data.rates.violent.all"
+
+xvars = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp"
+]
+
+results = []
+
+for state, g in df_exposure.groupby("state"):
+    temp = g[["state", "year", crime_var, "policy_score"] + xvars].copy()
+
+    temp[crime_var] = pd.to_numeric(temp[crime_var], errors="coerce")
+    temp["policy_score"] = pd.to_numeric(temp["policy_score"], errors="coerce")
+
+    for col in xvars:
+        temp[col] = pd.to_numeric(temp[col], errors="coerce")
+
+    temp = temp.dropna(subset=[crime_var] + xvars).copy()
+
+    if temp.shape[0] < 5:
+        continue
+
+    year_fe = pd.get_dummies(temp["year"], drop_first=True, dtype=float)
+    X = pd.concat([temp[xvars], year_fe], axis=1)
+    X = sm.add_constant(X, has_constant="add")
+
+    try:
+        model = sm.OLS(temp[crime_var], X).fit()
+
+        if "abortion_exposure_18_25" not in model.params:
+            continue
+
+        policy_val = temp["policy_score"].dropna().iloc[0] if temp["policy_score"].notna().any() else None
+
+        results.append({
+            "state": state,
+            "coef": model.params["abortion_exposure_18_25"],
+            "pval": model.pvalues["abortion_exposure_18_25"],
+            "n_obs": temp.shape[0],
+            "policy_score": policy_val
+        })
+
+    except Exception as e:
+        print(f"{state} failed: {e}")
+        continue
+
+state_coefs = pd.DataFrame(results)
+state_coefs["state"] = state_coefs["state"].astype(str).str.strip().str.upper()
+state_coefs = state_coefs.dropna(subset=["coef"])
+
+print(state_coefs.columns.tolist())
+print(state_coefs.head())
+```
+
+# Scatter Plot
+```{python}
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plot_df = state_coefs.dropna(subset=["policy_score", "coef"]).copy()
+
+plt.figure(figsize=(10, 6))
+sns.regplot(data=plot_df, x="policy_score", y="coef")
+
+for _, row in plot_df.iterrows():
+    plt.text(row["policy_score"], row["coef"], row["state"], fontsize=8)
+
+plt.axhline(0, linestyle="--")
+plt.xlabel("Policy Score")
+plt.ylabel("State-level abortion exposure coefficient")
+plt.title("Policy Score vs. State-level Abortion Exposure Effect")
+plt.show()
+```
+
+# Table Function
+```{python}
+import pandas as pd
+
+def make_model_table(coef_table, model, used_df, model_name="Model"):
+    table = coef_table.copy()
+
+    def stars(p):
+        if p < 0.01:
+            return "***"
+        elif p < 0.05:
+            return "**"
+        elif p < 0.10:
+            return "*"
+        return ""
+
+    rows = []
+    for var in table.index:
+        coef = table.loc[var, "coef"]
+        pval = table.loc[var, "pval"]
+
+        rows.append({
+            "Variable": var,
+            model_name: f"{coef:.3f}{stars(pval)}"
+        })
+        rows.append({
+            "Variable": "",
+            model_name: f"(p = {pval:.3f})"
+        })
+
+    rows.extend([
+        {"Variable": "Observations", model_name: f"{len(used_df):,}"},
+        {"Variable": "R-squared", model_name: f"{model.rsquared:.3f}"},
+        {"Variable": "State FE", model_name: "Yes"},
+        {"Variable": "Year FE", model_name: "Yes"},
+        {"Variable": "Clustered SE", model_name: "State"},
+    ])
+
+    out = pd.DataFrame(rows)
+
+    rename_dict = {
+        "const": "Constant",
+        "abortion_exposure_18_25": "Abortion exposure (18–25)",
+        "abortion_exposure_std": "Abortion exposure (standardized)",
+        "unemployment_rate": "Unemployment rate",
+        "gdp": "GDP",
+        "sex_and_age_18_to_24_years": "Population age 18–24",
+        "educational_attainment_bachelors_degree_or_higher": "Bachelor's degree or higher",
+        "abortionXhighpolicy": "Exposure × High-policy state"
+    }
+
+    out["Variable"] = out["Variable"].replace(rename_dict)
+
+    styled = (
+        out.style
+        .hide(axis="index")
+        .set_caption(model_name)
+        .set_table_styles([
+            {
+                "selector": "caption",
+                "props": [
+                    ("caption-side", "top"),
+                    ("font-size", "16px"),
+                    ("font-weight", "bold"),
+                    ("text-align", "left"),
+                    ("padding", "8px 0")
+                ]
+            },
+            {
+                "selector": "th",
+                "props": [
+                    ("background-color", "#2f4f4f"),
+                    ("color", "white"),
+                    ("font-weight", "bold"),
+                    ("text-align", "center"),
+                    ("padding", "8px")
+                ]
+            },
+            {
+                "selector": "td",
+                "props": [
+                    ("padding", "6px 10px"),
+                    ("border", "1px solid #d0d0d0")
+                ]
+            },
+            {
+                "selector": "table",
+                "props": [
+                    ("border-collapse", "collapse"),
+                    ("width", "70%"),
+                    ("font-family", "Arial, sans-serif"),
+                    ("font-size", "13px")
+                ]
+            }
+        ])
+        .set_properties(subset=["Variable"], **{
+            "text-align": "left",
+            "font-weight": "normal"
+        })
+        .set_properties(subset=[model_name], **{
+            "text-align": "right"
+        })
+        .apply(
+            lambda row: [
+                "background-color: #f7f7f7" if row.name % 2 == 0 else ""
+                for _ in row
+            ],
+            axis=1
+        )
+    )
+
+    return out, styled
+```
+
+```{python}
+main_out = make_model_table(
+    main_table,
+    main_model,
+    df_main_used,
+    model_name="Main Model"
+)
+
+main_out
+```
+
+```{python}
+robust_out = make_model_table(
+    robust_table,
+    robust_model,
+    df_robust_used,
+    model_name="Robust Model"
+)
+
+robust_out
+```
+
+```{python}
+weighted_out = make_model_table(
+    weighted_table,
+    weighted_model,
+    df_w_used,
+    model_name="Weighted Model"
+)
+
+weighted_out
+```
+
+```{python}
+high_out = make_model_table(
+    table_high,
+    model_high,
+    df_high_used,
+    model_name="High Policy"
+)
+
+high_out
+```
+
+```{python}
+low_out = make_model_table(
+    table_low,
+    model_low,
+    df_low_used,
+    model_name="Low Policy"
+)
+
+low_out
+```
+
+```{python}
+interaction_out = make_model_table(
+    interaction_table,
+    interaction_model,
+    df_int_used,
+    model_name="Interaction Model"
+)
+
+interaction_out
+```
+
+# Weighted Hetero Models
+```{python}
+import pandas as pd
+import statsmodels.api as sm
+
+# =====================================================
+# 1. Prepare weighted heterogeneity dataset
+# =====================================================
+
+df_hetero = df_exposure.copy()
+
+# Make sure needed variables are numeric
+df_hetero["policy_score"] = pd.to_numeric(df_hetero["policy_score"], errors="coerce")
+df_hetero["abortion_exposure_count"] = pd.to_numeric(df_hetero["abortion_exposure_count"], errors="coerce")
+
+# Keep only rows with at least some abortion exposure information
+df_hetero = df_hetero[df_hetero["abortion_exposure_count"] >= 1].copy()
+
+# Define weights based on number of observed lag years
+df_hetero["weight"] = df_hetero["abortion_exposure_count"]
+
+# =====================================================
+# 2. Create high-policy indicator
+# =====================================================
+
+median_policy = df_hetero["policy_score"].median()
+print("Median policy score:", median_policy)
+
+df_hetero["high_policy"] = df_hetero["policy_score"] > median_policy
+df_hetero["high_policy_int"] = df_hetero["high_policy"].astype(int)
+
+# Optional state-level check
+policy_check = (
+    df_hetero[["state", "policy_score", "high_policy"]]
+    .dropna()
+    .drop_duplicates(subset=["state"])
+    .sort_values("policy_score")
+)
+
+print("\nSTATE POLICY GROUPS (sample)")
+print(policy_check.head(15))
+print("\nNumber of high-policy states:", policy_check["high_policy"].sum())
+print("Number of low-policy states:", (~policy_check["high_policy"]).sum())
+
+# =====================================================
+# 3. Define baseline regressors
+# =====================================================
+
+main_x = [
+    "abortion_exposure_18_25",
+    "unemployment_rate",
+    "gdp"
+]
+
+# =====================================================
+# 4. Weighted model for HIGH-policy states
+# =====================================================
+
+df_high_w = df_hetero[df_hetero["high_policy"] == True].copy()
+
+model_high_w, df_high_used_w, table_high_w = run_weighted_fe_model(
+    df_high_w,
+    crime_var,
+    main_x,
+    weight_col="weight"
+)
+
+print("\nHIGH-POLICY WEIGHTED MODEL SAMPLE SIZE:", df_high_used_w.shape)
+print("\nHIGH-POLICY WEIGHTED MODEL RESULTS")
+print(table_high_w)
+print("\nHIGH-POLICY WEIGHTED MODEL R-SQUARED:", model_high_w.rsquared)
+
+# =====================================================
+# 5. Weighted model for LOW-policy states
+# =====================================================
+
+df_low_w = df_hetero[df_hetero["high_policy"] == False].copy()
+
+model_low_w, df_low_used_w, table_low_w = run_weighted_fe_model(
+    df_low_w,
+    crime_var,
+    main_x,
+    weight_col="weight"
+)
+
+print("\nLOW-POLICY WEIGHTED MODEL SAMPLE SIZE:", df_low_used_w.shape)
+print("\nLOW-POLICY WEIGHTED MODEL RESULTS")
+print(table_low_w)
+print("\nLOW-POLICY WEIGHTED MODEL R-SQUARED:", model_low_w.rsquared)
+
+# =====================================================
+# 6. Compare weighted split-sample coefficients
+# =====================================================
+
+hetero_compare_w = pd.DataFrame({
+    "High Policy Weighted Coef": table_high_w["coef"].reindex(main_x),
+    "High Policy Weighted pval": table_high_w["pval"].reindex(main_x),
+    "Low Policy Weighted Coef": table_low_w["coef"].reindex(main_x),
+    "Low Policy Weighted pval": table_low_w["pval"].reindex(main_x),
+})
+
+print("\nWEIGHTED HETEROGENEITY COMPARISON")
+print(hetero_compare_w)
+
+# =====================================================
+# 7. Weighted interaction model
+# =====================================================
+# high_policy itself is time-invariant and should NOT be included directly
+# with state fixed effects. The interaction term is identified because
+# abortion exposure varies over time.
+
+df_hetero["abortionXhighpolicy"] = (
+    df_hetero["abortion_exposure_18_25"] *
+    df_hetero["high_policy_int"]
+)
+
+interaction_x_w = [
+    "abortion_exposure_18_25",
+    "abortionXhighpolicy",
+    "unemployment_rate",
+    "gdp"
+]
+
+interaction_model_w, df_int_used_w, interaction_table_w = run_weighted_fe_model(
+    df_hetero,
+    crime_var,
+    interaction_x_w,
+    weight_col="weight"
+)
+
+print("\nWEIGHTED INTERACTION MODEL SAMPLE SIZE:", df_int_used_w.shape)
+print("\nWEIGHTED INTERACTION MODEL RESULTS")
+print(interaction_table_w)
+print("\nWEIGHTED INTERACTION MODEL R-SQUARED:", interaction_model_w.rsquared)
+
+# =====================================================
+# 8. Interpret weighted interaction model
+# =====================================================
+
+low_effect_w = interaction_table_w.loc["abortion_exposure_18_25", "coef"]
+low_pval_w = interaction_table_w.loc["abortion_exposure_18_25", "pval"]
+
+diff_effect_w = interaction_table_w.loc["abortionXhighpolicy", "coef"]
+diff_pval_w = interaction_table_w.loc["abortionXhighpolicy", "pval"]
+
+high_effect_w = low_effect_w + diff_effect_w
+
+print("\nINTERPRETATION OF WEIGHTED INTERACTION MODEL")
+print(f"Effect in LOW-policy states: {low_effect_w:.4f} (p={low_pval_w:.4f})")
+print(f"Difference for HIGH-policy states: {diff_effect_w:.4f} (p={diff_pval_w:.4f})")
+print(f"Implied effect in HIGH-policy states: {high_effect_w:.4f}")
+
+# =====================================================
+# 9. Summary table of weighted heterogeneity results
+# =====================================================
+
+summary_table_w = pd.DataFrame({
+    "Model": [
+        "Low Policy (Weighted)",
+        "High Policy (Weighted)",
+        "Interaction: Low Baseline (Weighted)",
+        "Interaction: High-Low Difference (Weighted)"
+    ],
+    "Coefficient": [
+        table_low_w.loc["abortion_exposure_18_25", "coef"],
+        table_high_w.loc["abortion_exposure_18_25", "coef"],
+        interaction_table_w.loc["abortion_exposure_18_25", "coef"],
+        interaction_table_w.loc["abortionXhighpolicy", "coef"]
+    ],
+    "P-value": [
+        table_low_w.loc["abortion_exposure_18_25", "pval"],
+        table_high_w.loc["abortion_exposure_18_25", "pval"],
+        interaction_table_w.loc["abortion_exposure_18_25", "pval"],
+        interaction_table_w.loc["abortionXhighpolicy", "pval"]
+    ]
+})
+
+print("\nSUMMARY OF WEIGHTED HETEROGENEITY RESULTS")
+print(summary_table_w)
+```
+
+# Coefficient Tree Chart
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+def get_coef_ci(model, coef_table, var_name):
+    coef = coef_table.loc[var_name, "coef"]
+    param_order = list(coef_table.index)
+    pos = param_order.index(var_name)
+    se = model.bse[pos]
+    lower = coef - 1.96 * se
+    upper = coef + 1.96 * se
+    return coef, lower, upper
+
+results = []
+
+model_specs = [
+    ("Main", main_model, main_table),
+    ("Robust", robust_model, robust_table),
+    ("Weighted", weighted_model, weighted_table),
+]
+
+for name, model, table in model_specs:
+    coef, lower, upper = get_coef_ci(model, table, "abortion_exposure_18_25")
+    results.append({
+        "Model": name,
+        "coef": coef,
+        "lower": lower,
+        "upper": upper
+    })
+
+coef_df = pd.DataFrame(results)
+print(coef_df)
+
+plt.figure(figsize=(8, 5))
+x = np.arange(len(coef_df))
+
+plt.errorbar(
+    x,
+    coef_df["coef"],
+    yerr=[
+        coef_df["coef"] - coef_df["lower"],
+        coef_df["upper"] - coef_df["coef"]
+    ],
+    fmt="o",
+    capsize=5
+)
+
+for i, row in coef_df.iterrows():
+    plt.text(i, row["coef"], f"{row['coef']:.2f}", ha="center", va="bottom")
+
+plt.axhline(0, linestyle="--")
+plt.xticks(x, coef_df["Model"])
+plt.ylabel("Coefficient on Abortion Exposure")
+plt.title("Abortion Exposure Coefficients with 95% Confidence Intervals")
+plt.tight_layout()
+plt.show()
+```
+
+# Interaction Plots
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# ==========================================
+# 1. Pull coefficients from interaction model
+# ==========================================
+# Assumes:
+# position 1 = abortion_exposure_18_25
+# position 2 = abortionXhighpolicy
+
+b1 = interaction_model_w.params[1]
+b2 = interaction_model_w.params[2]
+
+# ==========================================
+# 2. Pull variance-covariance matrix
+# ==========================================
+vcov = interaction_model_w.cov_params()
+
+var_b1 = vcov[1, 1]
+var_b2 = vcov[2, 2]
+cov_b1b2 = vcov[1, 2]
+
+# ==========================================
+# 3. Compute effects
+# ==========================================
+# Low-policy effect
+low_coef = b1
+low_se = np.sqrt(var_b1)
+
+# High-policy effect = baseline + interaction
+high_coef = b1 + b2
+high_var = var_b1 + var_b2 + 2 * cov_b1b2
+high_se = np.sqrt(high_var)
+
+# Difference = interaction term
+diff_coef = b2
+diff_se = np.sqrt(var_b2)
+
+# ==========================================
+# 4. Compute 95% confidence intervals
+# ==========================================
+low_lower = low_coef - 1.96 * low_se
+low_upper = low_coef + 1.96 * low_se
+
+high_lower = high_coef - 1.96 * high_se
+high_upper = high_coef + 1.96 * high_se
+
+diff_lower = diff_coef - 1.96 * diff_se
+diff_upper = diff_coef + 1.96 * diff_se
+
+# ==========================================
+# 5. Put into dataframe
+# ==========================================
+coef_df = pd.DataFrame({
+    "Group": ["Low Policy", "High Policy", "Difference (High - Low)"],
+    "coef": [low_coef, high_coef, diff_coef],
+    "lower": [low_lower, high_lower, diff_lower],
+    "upper": [low_upper, high_upper, diff_upper]
+})
+
+print(coef_df)
+
+# ==========================================
+# 6. Plot coefficient chart with 95% CIs
+# ==========================================
+plt.figure(figsize=(9, 5))
+
+x = np.arange(len(coef_df))
+
+plt.errorbar(
+    x,
+    coef_df["coef"],
+    yerr=[
+        coef_df["coef"] - coef_df["lower"],
+        coef_df["upper"] - coef_df["coef"]
+    ],
+    fmt="o",
+    capsize=6
+)
+
+# Zero line
+plt.axhline(0, linestyle="--")
+
+# Labels
+plt.xticks(x, coef_df["Group"])
+plt.ylabel("Effect of Abortion Exposure on Crime")
+plt.title("Interaction Model: Effects by Policy Environment")
+
+# Add value labels
+for i, row in coef_df.iterrows():
+    va = "bottom" if row["coef"] >= 0 else "top"
+    plt.text(i, row["coef"], f"{row['coef']:.2f}", ha="center", va=va)
+
+plt.tight_layout()
+plt.show()
+```
